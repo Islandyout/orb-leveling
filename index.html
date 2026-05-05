@@ -4,7 +4,94 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>Solo Leveling: Rebuild</title>
+  <meta name="application-name" content="Solo Leveling: Rebuild"/>
+  <meta name="description" content="Become the Shadow Monarch. Kill. Extract. Level up."/>
+  <meta name="theme-color" content="#03030f"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="SL:Rebuild"/>
+  <link rel="manifest" id="pwaManifest"/>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+
+  <style>
+  /* ── PWA INSTALL BANNER ── */
+  #pwaInstallBanner{
+    position:fixed;bottom:calc(14px + var(--sb,0px));left:50%;transform:translateX(-50%) translateY(120px);
+    z-index:9999;pointer-events:all;
+    background:linear-gradient(135deg,rgba(10,5,30,.98),rgba(5,2,18,.98));
+    border:1px solid rgba(123,53,255,.6);border-radius:12px;
+    padding:13px 16px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 0 30px rgba(123,53,255,.3),inset 0 1px 0 rgba(255,255,255,.06);
+    min-width:min(320px,calc(100vw - 32px));max-width:380px;
+    transition:transform .45s cubic-bezier(.17,.67,.28,1.18),opacity .35s;
+    opacity:0;
+  }
+  #pwaInstallBanner.show{transform:translateX(-50%) translateY(0);opacity:1}
+  #pwaInstallBanner .pwa-icon{
+    width:42px;height:42px;border-radius:10px;flex-shrink:0;
+    background:radial-gradient(circle at 35% 30%,#9955ff,#3a10aa);
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+    box-shadow:0 0 14px rgba(123,53,255,.5);
+  }
+  #pwaInstallBanner .pwa-text{flex:1;min-width:0}
+  #pwaInstallBanner .pwa-title{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:#eeeeff;letter-spacing:1px}
+  #pwaInstallBanner .pwa-sub{font-family:'Share Tech Mono',monospace;font-size:8.5px;color:rgba(180,160,255,.7);margin-top:2px}
+  #pwaInstallBtn{
+    cursor:pointer;background:linear-gradient(135deg,rgba(123,53,255,.25),rgba(90,31,255,.2));
+    border:1.5px solid rgba(123,53,255,.7);color:#c4aaff;
+    font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;
+    padding:8px 14px;border-radius:7px;letter-spacing:1px;white-space:nowrap;
+    transition:background .15s,box-shadow .15s;min-height:38px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #pwaInstallBtn:active{background:rgba(123,53,255,.45);box-shadow:0 0 18px rgba(123,53,255,.5)}
+  #pwaDismissBtn{
+    cursor:pointer;background:transparent;border:none;
+    color:rgba(110,103,163,.8);font-size:18px;padding:4px;
+    flex-shrink:0;-webkit-tap-highlight-color:transparent;line-height:1;
+  }
+  #pwaDismissBtn:active{color:#eeeeff}
+
+  /* ── iOS INSTALL HINT ── */
+  #iosInstallHint{
+    position:fixed;bottom:calc(14px + var(--sb,0px));left:50%;transform:translateX(-50%) translateY(120px);
+    z-index:9999;pointer-events:all;
+    background:linear-gradient(135deg,rgba(10,5,30,.98),rgba(5,2,18,.98));
+    border:1px solid rgba(123,53,255,.5);border-radius:12px;
+    padding:12px 16px;text-align:center;
+    box-shadow:0 0 24px rgba(123,53,255,.25);
+    min-width:min(300px,calc(100vw - 32px));
+    transition:transform .4s cubic-bezier(.17,.67,.28,1.18),opacity .35s;
+    opacity:0;
+  }
+  #iosInstallHint.show{transform:translateX(-50%) translateY(0);opacity:1}
+  #iosInstallHint .ios-title{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:#eeeeff;margin-bottom:5px}
+  #iosInstallHint .ios-steps{font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(180,160,255,.75);line-height:2}
+  #iosInstallHint .ios-close{
+    margin-top:8px;cursor:pointer;background:transparent;
+    border:1px solid rgba(123,53,255,.35);color:rgba(110,103,163,.9);
+    font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
+    padding:6px 16px;border-radius:5px;letter-spacing:1px;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ── PWA STATUS BADGE (top right, tiny) ── */
+  #pwaBadge{
+    position:fixed;top:calc(8px + var(--st,0px));right:calc(8px + var(--sr,0px));
+    font-family:'Share Tech Mono',monospace;font-size:7px;color:rgba(123,53,255,.5);
+    letter-spacing:.5px;pointer-events:none;z-index:29;display:none;
+    border:1px solid rgba(123,53,255,.2);border-radius:3px;padding:2px 5px;
+  }
+  #pwaBadge.show{display:block}
+
+  /* Arrow pointing down for iOS */
+  #iosInstallHint::after{
+    content:'▼';
+    position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);
+    color:rgba(123,53,255,.5);font-size:12px;
+  }
+  </style>
   <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -521,6 +608,31 @@
   </style>
 </head>
 <body>
+<!-- PWA Install Banner (Android/Desktop) -->
+<div id="pwaInstallBanner">
+  <div class="pwa-icon">⚔</div>
+  <div class="pwa-text">
+    <div class="pwa-title">INSTALL SOLO LEVELING</div>
+    <div class="pwa-sub">Play offline · No browser needed</div>
+  </div>
+  <button id="pwaInstallBtn">INSTALL</button>
+  <button id="pwaDismissBtn">✕</button>
+</div>
+
+<!-- iOS Install Hint -->
+<div id="iosInstallHint">
+  <div class="ios-title">⚔ INSTALL TO HOME SCREEN</div>
+  <div class="ios-steps">
+    Tap <strong style="color:#7b35ff">Share ⬆</strong> in Safari<br>
+    Then select <strong style="color:#7b35ff">Add to Home Screen</strong><br>
+    Play offline as a full app
+  </div>
+  <button class="ios-close" id="iosInstallClose">CLOSE</button>
+</div>
+
+<!-- PWA installed badge -->
+<div id="pwaBadge">📲 APP</div>
+
 <canvas id="gameCanvas"></canvas>
 <canvas id="lootBeamCanvas"></canvas>
 <canvas id="xpOrbCanvas"></canvas>
@@ -596,6 +708,9 @@
       <div class="mbu" id="btnShop">🛒<div class="mbu-lbl">SHOP</div></div>
       <div class="mbu" id="btnArmy">👥<div class="mbu-lbl">ARMY</div></div>
       <div class="mbu" id="btnStats">📊<div class="mbu-lbl">STATS</div></div>
+      <div class="mbu" id="btnSkill">🔮<div class="mbu-lbl">SKILL</div></div>
+      <div class="mbu" id="btnQuest">📋<div class="mbu-lbl">QUEST</div></div>
+      <div class="mbu" id="btnPrestige">✦<div class="mbu-lbl">ARCHIVE</div></div>
     </div>
   </div>
 </div>
@@ -802,8 +917,9 @@ const Combo={
   el:null,numEl:null,lblEl:null,ratEl:null,
   hideTimer:null,
   init(){this.el=document.getElementById('comboDisplay');this.numEl=document.getElementById('comboNum');this.lblEl=document.getElementById('comboLabel');this.ratEl=document.getElementById('comboRating');},
-  hit(){
+  hit(G_ref){
     this.count++;this.timer=this.timerMax;
+    if(window._G&&window._G._questStats)window._G._questStats.maxCombo=Math.max(window._G._questStats.maxCombo,this.count);
     if(this.count>1){
       AudioEngine.play('combo',.18+Math.min(this.count*.006,.2));
       if(this.count%5===0)screenShake(Math.min(this.count*.4,8));
@@ -858,7 +974,6 @@ const KillStreak={
     this.hideTimer=setTimeout(()=>this.el.classList.remove('visible'),2200);
   },
   tick(dt){if(this.kills===0)return;this.timer-=dt;if(this.timer<=0){this.kills=0;}},
-  init(){this.el=document.getElementById('streakBanner');}
 };
 
 /* ── LOOT BEAM SYSTEM ── */
@@ -1059,6 +1174,255 @@ const UNIQUE_EFFECTS={
   "Shadow Core":["Extraction success rate always 100%"],
 };
 
+/* ============================================================
+   BUILD SYSTEM — Tag detection, identity, scaling, aura, milestones
+   ============================================================ */
+
+const BUILD_DEFS={
+  CRIT:{
+    label:"CRIT BUILD",color:"#ff6600",auraColor:"rgba(255,100,0,",
+    desc:"Criticals deal +30% dmg, Mutilation fires 4 hits",
+    icon:"⚡",milestone:[
+      {threshold:40,id:"overdrive",name:"CRIT OVERDRIVE",desc:"Crits now deal 3× instead of 2.2×"},
+      {threshold:80,id:"cascade",name:"CRIT CASCADE",desc:"Each crit reduces all cooldowns by 0.3s"},
+    ]
+  },
+  SHADOW:{
+    label:"SHADOW BUILD",color:"#aa44ff",auraColor:"rgba(120,40,200,",
+    desc:"Domain summons extra shadow strikes, Pull chains to shadows",
+    icon:"🌑",milestone:[
+      {threshold:30,id:"swarm",name:"SHADOW SWARM",desc:"Shadows attack 40% faster"},
+      {threshold:60,id:"monarch",name:"SHADOW MONARCH",desc:"All shadows gain +50% ATK permanently"},
+    ]
+  },
+  BLEED:{
+    label:"BLEED BUILD",color:"#ff2244",auraColor:"rgba(200,20,40,",
+    desc:"Bleed spreads on kill, Stealth Strike always bleeds",
+    icon:"🩸",milestone:[
+      {threshold:35,id:"hemorrhage",name:"HEMORRHAGE",desc:"Bleed duration doubled, deals 2× damage"},
+      {threshold:70,id:"rupture",name:"RUPTURE",desc:"Killing bleeding targets explodes them for AoE damage"},
+    ]
+  },
+  SPEED:{
+    label:"SPEED BUILD",color:"#00ddff",auraColor:"rgba(0,180,230,",
+    desc:"All cooldowns -20%, Authority hits twice",
+    icon:"💨",milestone:[
+      {threshold:30,id:"blur",name:"SPEED BLUR",desc:"Basic attacks fire twice when at full combo"},
+      {threshold:60,id:"flashstep",name:"FLASH STEP",desc:"Every 3rd attack teleports behind nearest enemy"},
+    ]
+  },
+  TANK:{
+    label:"TANK BUILD",color:"#888888",auraColor:"rgba(100,100,120,",
+    desc:"Defense converts to bonus ATK, HP above 80% grants shield aura",
+    icon:"🛡",milestone:[
+      {threshold:30,id:"fortress",name:"FORTRESS",desc:"Gain 2 DEF per level up"},
+      {threshold:60,id:"immovable",name:"IMMOVABLE",desc:"Knockback immunity, enemies bounce off you"},
+    ]
+  },
+  NONE:{label:"HUNTER",color:"#aaccff",auraColor:"rgba(120,150,220,",desc:"No dominant build detected yet",icon:"👤",milestone:[]}
+};
+
+/* ── BUILD TAG COMPUTATION ── */
+function computeBuildTags(G){
+  const p=G.player;
+  const eq=G.inventory.equipped;
+  const tags={crit:0,shadow:0,bleed:0,speed:0,tank:0};
+
+  // Stat contributions
+  tags.crit+=Math.round((p.critBonus||0)*200);          // crit%→ tag
+  tags.shadow+=G.shadows.length*12;                      // each shadow +12
+  tags.speed+=Math.round((p.speed-3.2)*30);              // speed above base
+  tags.tank+=Math.round(p.defense*4+(p.maxHp-200)*.05); // def+hp
+
+  // Equipped item affixes
+  for(const item of Object.values(eq)){
+    if(!item||!item.affixes)continue;
+    for(const ax of item.affixes){
+      if(ax==="CRIT_BOOST"||ax==="CRIT_ON_HIT")tags.crit+=15;
+      if(ax==="SHADOW_POWER"||ax==="SHADOW_STRIKE")tags.shadow+=18;
+      if(ax==="BLEED_ON_HIT"||ax==="BLEED_SPREAD")tags.bleed+=14;
+      if(ax==="SPEED_BURST"||ax==="HASTE")tags.speed+=14;
+      if(ax==="FORTIFY"||ax==="IRON_SKIN")tags.tank+=14;
+    }
+    // Rarity bonuses
+    if(item.slot==="weapon"&&item.rarity==="mythic")tags.crit+=10;
+    if(item.name==="Jinwoo's Dagger")tags.bleed+=25;
+    if(item.name==="Shadow Core")tags.shadow+=30;
+    if(item.name==="Grand-Marshal Ring")tags.shadow+=20;
+    if(item.name==="Ruler's Hand")tags.crit+=20;
+    if(item.name==="Beru's Carapace")tags.tank+=25;
+  }
+
+  // Daily modifier biases
+  if(G.dailyMod){
+    if(G.dailyMod.id==="crit_surge")tags.crit+=25;
+    if(G.dailyMod.id==="shadow_power")tags.shadow+=25;
+    if(G.dailyMod.id==="elite_invasion")tags.tank+=15;
+  }
+
+  // Stat point allocations (infer intent)
+  tags.speed+=Math.round((p.speed-3.2)*20);
+  tags.tank+=Math.round(p.defense*3);
+
+  return tags;
+}
+
+function detectBuild(G){
+  const tags=computeBuildTags(G);
+  G.buildTags=tags;
+  const sorted=Object.entries(tags).sort((a,b)=>b[1]-a[1]);
+  const top=sorted[0];
+  const second=sorted[1];
+  // Need meaningful lead to claim a build
+  const dominant=top[1]>=18&&top[1]>second[1]+8?top[0].toUpperCase():"NONE";
+  const prev=G.buildType||"NONE";
+  G.buildType=dominant;
+  G.buildDef=BUILD_DEFS[dominant]||BUILD_DEFS.NONE;
+  // Announce build change
+  if(dominant!=="NONE"&&dominant!==prev){
+    notify(G,`${G.buildDef.icon} ${G.buildDef.label} DETECTED`,G.buildDef.color,3000);
+    flashScreen(G.buildDef.color,.2,500);
+    AudioEngine.play('levelup',.4);
+  }
+  // Check milestones
+  checkBuildMilestones(G,tags,dominant);
+}
+
+/* ── BUILD MILESTONES ── */
+function checkBuildMilestones(G,tags,build){
+  if(!BUILD_DEFS[build])return;
+  G._unlockedMilestones=G._unlockedMilestones||{};
+  const score=tags[build.toLowerCase()]||0;
+  for(const ms of BUILD_DEFS[build].milestone||[]){
+    if(score>=ms.threshold&&!G._unlockedMilestones[ms.id]){
+      G._unlockedMilestones[ms.id]=true;
+      notify(G,`✦ ${ms.name}: ${ms.desc}`,G.buildDef.color,4500);
+      flashScreen(G.buildDef.color,.4,700);
+      screenShake(8);AudioEngine.play('rankup',.6);
+      flashLevelUp(ms.name);
+    }
+  }
+}
+
+/* ── BUILD SKILL SCALING ── */
+function buildSkillMult(G,skillType){
+  const b=G.buildType||"NONE";
+  const ms=G._unlockedMilestones||{};
+  if(skillType==="atk"){
+    if(b==="CRIT")return ms.overdrive?3.0:1.3;
+    if(b==="BLEED")return 1.1;
+    if(b==="TANK")return 1.0+Math.min(G.player.defense*.005,.4);// defense converts to dmg
+  }
+  if(skillType==="crit_chance"){
+    if(b==="CRIT")return ms.overdrive?0.95:0.80;// near-guaranteed crits
+    if(b==="SPEED")return 0.60;
+    return null;// use default
+  }
+  if(skillType==="cd_reduction"){
+    if(b==="SPEED")return 0.8;// 20% CD reduction
+    if(b==="CRIT"&&ms.cascade)return 0.97;// per-crit reduction handled elsewhere
+    return 1.0;
+  }
+  if(skillType==="aoe_range"){
+    if(b==="SHADOW")return 1.4;
+    if(b==="BLEED")return 1.2;
+    return 1.0;
+  }
+  return 1.0;
+}
+
+/* ── BUILD-BIASED LOOT ── */
+const BUILD_LOOT_BIAS={
+  CRIT:{weapon:["Ruler's Hand","Jinwoo's Dagger","Enchanted Blade"],affixes:["CRIT_BOOST","CRIT_ON_HIT"]},
+  SHADOW:{ring:["Grand-Marshal Ring","Shadow Core","Monarch's Sigil"],chest:["Shadow Core"],affixes:["SHADOW_POWER","SHADOW_STRIKE"]},
+  BLEED:{weapon:["Jinwoo's Dagger"],affixes:["BLEED_ON_HIT","BLEED_SPREAD"]},
+  SPEED:{boots:["Void Boots"],gloves:["Demon Gauntlets"],affixes:["SPEED_BURST","HASTE"]},
+  TANK:{chest:["Beru's Carapace"],helmet:["Steel Helm"],affixes:["FORTIFY","IRON_SKIN"]},
+};
+
+function maybeInjectBuildAffix(G,item){
+  const b=G.buildType||"NONE";
+  const bias=BUILD_LOOT_BIAS[b];
+  if(!bias||Math.random()>.3)return;// 30% chance to inject build-relevant affix
+  const affixPool=bias.affixes||[];
+  if(!affixPool.length)return;
+  if(!item.affixes)item.affixes=[];
+  const ax=affixPool[Math.floor(Math.random()*affixPool.length)];
+  if(!item.affixes.includes(ax)){
+    item.affixes.push(ax);
+    // Re-calculate effects
+    item._enriched=false;
+    enrichItem(item);
+  }
+}
+
+/* ── ITEM AFFIXES (applied on equip) ── */
+const AFFIX_DEFS={
+  CRIT_BOOST:{label:"Crit Boost",apply:(p)=>{p.critBonus=(p.critBonus||0)+.08;},remove:(p)=>{p.critBonus=Math.max(0,(p.critBonus||0)-.08);}},
+  CRIT_ON_HIT:{label:"Crit on Hit",apply:(p)=>{p.critBonus=(p.critBonus||0)+.05;},remove:(p)=>{p.critBonus=Math.max(0,(p.critBonus||0)-.05);}},
+  SHADOW_POWER:{label:"Shadow Power",apply:(p)=>{p._shadowPower=(p._shadowPower||0)+.2;},remove:(p)=>{p._shadowPower=Math.max(0,(p._shadowPower||0)-.2);}},
+  SHADOW_STRIKE:{label:"Shadow Strike",apply:(p)=>{p._shadowPower=(p._shadowPower||0)+.15;},remove:(p)=>{p._shadowPower=Math.max(0,(p._shadowPower||0)-.15);}},
+  BLEED_ON_HIT:{label:"Bleed on Hit",apply:(p)=>{p._bleedOnHit=true;},remove:(p)=>{p._bleedOnHit=false;}},
+  BLEED_SPREAD:{label:"Bleed Spread",apply:(p)=>{p._bleedSpread=true;},remove:(p)=>{p._bleedSpread=false;}},
+  SPEED_BURST:{label:"Speed Burst",apply:(p)=>{p.speed+=.4;p.atkRate=Math.max(150,p.atkRate-40);},remove:(p)=>{p.speed=Math.max(.5,p.speed-.4);p.atkRate+=40;}},
+  HASTE:{label:"Haste",apply:(p)=>{p.speed+=.25;},remove:(p)=>{p.speed=Math.max(.5,p.speed-.25);}},
+  FORTIFY:{label:"Fortify",apply:(p)=>{p.defense+=6;p.maxHp+=30;p.hp=Math.min(p.hp+30,p.maxHp);},remove:(p)=>{p.defense=Math.max(0,p.defense-6);p.maxHp=Math.max(1,p.maxHp-30);}},
+  IRON_SKIN:{label:"Iron Skin",apply:(p)=>{p.defense+=4;},remove:(p)=>{p.defense=Math.max(0,p.defense-4);}},
+};
+
+function applyAffixes(p,item,sign){
+  if(!item.affixes)return;
+  for(const ax of item.affixes){
+    const def=AFFIX_DEFS[ax];if(!def)continue;
+    if(sign>0)def.apply(p);else def.remove(p);
+  }
+}
+
+/* ── BUILD AURA DRAW ── */
+function drawBuildAura(G){
+  const p=G.player,ctx=G.ctx;
+  const b=G.buildType||"NONE";
+  const def=BUILD_DEFS[b]||BUILD_DEFS.NONE;
+  const ac=def.auraColor;
+  const t=performance.now()*.001;
+  const pulse=.3+Math.sin(t*2)*.15;
+  // Outer aura ring
+  ctx.save();
+  ctx.beginPath();ctx.arc(p.x,p.y,p.r+10+Math.sin(t*3)*3,0,Math.PI*2);
+  ctx.strokeStyle=`${ac}${pulse})`;
+  ctx.lineWidth=b==="NONE"?0:2.5;
+  ctx.shadowBlur=b==="NONE"?0:16;ctx.shadowColor=def.color;
+  ctx.stroke();ctx.restore();
+  // Build-specific particle emissions
+  if(b==="BLEED"&&Math.random()<.08){spawnParticles(G,p.x,p.y,1,"#ff2244",1.2);}
+  if(b==="SHADOW"&&Math.random()<.06){spawnParticles(G,p.x,p.y,1,"#440088",1.5);}
+  if(b==="SPEED"&&Math.random()<.1){
+    const a=Math.random()*Math.PI*2;
+    G.effects.particles.push({x:p.x+Math.cos(a)*p.r,y:p.y+Math.sin(a)*p.r,vx:Math.cos(a+Math.PI)*2,vy:Math.sin(a+Math.PI)*2,r:2,color:"#00ddff",alpha:1,life:200,maxLife:200});
+  }
+}
+
+/* ── BUILD HUD ELEMENT ── */
+function renderBuildHUD(G){
+  const b=G.buildType||"NONE";
+  const def=BUILD_DEFS[b]||BUILD_DEFS.NONE;
+  // Update or create build badge
+  let badge=document.getElementById("buildBadge");
+  if(!badge){
+    badge=document.createElement("div");badge.id="buildBadge";
+    badge.style.cssText=`position:fixed;top:calc(100px + var(--st,0px));left:50%;transform:translateX(-50%);
+      font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;
+      padding:3px 10px;border-radius:3px;pointer-events:none;z-index:31;
+      border:1px solid;transition:color .4s,border-color .4s,background .4s;`;
+    document.body.appendChild(badge);
+  }
+  badge.textContent=`${def.icon} ${def.label}`;
+  badge.style.color=def.color;
+  badge.style.borderColor=def.color+"66";
+  badge.style.background=`${def.auraColor}0.08)`;
+  badge.style.textShadow=`0 0 8px ${def.color}`;
+}
+
 const CONFIG={
   player:{radius:14,speed:3.2,maxHp:200,maxMp:80,mpRegen:0.018,atkRate:300,atkRange:65,atkDamage:25,keyRegenTime:60000},
   spawner:{baseRate:2200,maxEnemies:12},
@@ -1234,9 +1598,13 @@ function tryDropLoot(G,rank,guaranteed){
     let forceMythic=false;
     if(PitySystem.isFull()){forceMythic=true;PitySystem.trigger();}
     const item=rollLoot(rank||"E",G.player.level,forceMythic);
+    // Build bias: inject relevant affix 30% of the time
+    if(item.slot)maybeInjectBuildAffix(G,item);
     // Apply unique effects from pool
     if(UNIQUE_EFFECTS[item.name]){item.effects=[...UNIQUE_EFFECTS[item.name]];}
-    G.inventory.items.push(item);G.inventory.gold+=item.val;
+    G.inventory.items.push(item);const _goldMult=(G.prestige?.passives?.gold_sense)?1.25:1;
+  const _goldVal=Math.round(item.val*_goldMult);
+  G.inventory.gold+=_goldVal;if(G._questStats){G._questStats.goldEarned=(G._questStats.goldEarned||0)+_goldVal;G._questStats.itemsCollected=(G._questStats.itemsCollected||0)+1;}if(G._questStats)G._questStats.goldEarned=(G._questStats.goldEarned||0)+item.val;
     LootBeams.spawn(G.player.x+(Math.random()-.5)*60,G.player.y-20,item.rarity,item.icon);
     spawnGoldBurst(G.player.x+30,G.player.y-40,item.val);
     if(item.rarity!=='mythic'&&item.rarity!=='national')PitySystem.increment();
@@ -1267,9 +1635,10 @@ function equipItem(G,item){
   G.inventory.equipped[item.slot]=item;
   item.isEquipped=true;
   applyEquipStats(G.player,item,1);
+  applyAffixes(G.player,item,1);
   notify(G,`Equipped: ${item.icon} ${item.name}`,"#ffd700");
-  // golden flash on player
   G.effects.equipFlash=400;
+  detectBuild(G);renderBuildHUD(G);
   autoSave(G);
   return true;
 }
@@ -1278,6 +1647,8 @@ function unequipItem(G,item){
   G.inventory.equipped[item.slot]=null;
   item.isEquipped=false;
   applyEquipStats(G.player,item,-1);
+  applyAffixes(G.player,item,-1);
+  detectBuild(G);renderBuildHUD(G);
   autoSave(G);
 }
 function applyEquipStats(p,item,sign){
@@ -1329,12 +1700,21 @@ function makeGameplayState(){
     hitStop:0,
     projectiles:[],
     dailyMod:null,
+    buildType:"NONE",
+    buildTags:{crit:0,shadow:0,bleed:0,speed:0,tank:0},
+    buildDef:BUILD_DEFS.NONE,
+    _unlockedMilestones:{},
+    prestige:{tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0},
+    quests:[],questLastRefresh:0,
+    _deathPenaltyApplied:false,
   };
 }
 function initState(canvas,ctx){
   const G=Object.assign(makeGameplayState(),{canvas,ctx,W:window.innerWidth,H:window.innerHeight,lastTime:0,keys:{},joy:{dx:0,dy:0,active:false},isTouch:false});
   G.player.x=G.W/2;G.player.y=G.H/2;
   for(const s of EQ_SLOTS)G.inventory.equipped[s.id]=null;
+  G._questStats={maxCombo:0,goldEarned:0,itemsCollected:0,bRankClear:0};
+  G._skillUpgrades={};
   initAbilityCooldowns(G);return G;
 }
 function resetGameState(G){
@@ -1343,11 +1723,18 @@ function resetGameState(G){
   G.keys={};G.joy.dx=G.joy.dy=0;G.joy.active=false;
   G.player.x=G.W/2;G.player.y=G.H/2;
   for(const s of EQ_SLOTS)G.inventory.equipped[s.id]=null;
+  G.eliteTimer=90000;G.projectiles=[];G.buildType="NONE";
+  G._questStats={maxCombo:0,goldEarned:0,itemsCollected:0,bRankClear:0};
+  G._skillUpgrades={};
+  G.buildTags={crit:0,shadow:0,bleed:0,speed:0,tank:0};
+  G.buildDef=BUILD_DEFS.NONE;G._unlockedMilestones={};
+  G._deathPenaltyApplied=false;
+  const bb=document.getElementById("buildBadge");if(bb)bb.remove();
   initAbilityCooldowns(G);
 }
 function initAbilityCooldowns(G){G.abilities={};for(const ab of ABILITIES)G.abilities[ab.id]={cd:0,maxCd:ab.baseCd*1000};}
 
-function notify(G,text,color="#ffd700",dur=2400){G.notifications.push({text,color,life:dur,maxLife:dur,y:0});}
+function notify(G,text,color="#ffd700",dur=2400){G.notifications.push({text,color,life:dur,maxLife:dur,y:0});if(G.notifications.length>8)G.notifications.splice(0,G.notifications.length-8);}
 function updateNotifications(G,dt){for(let i=G.notifications.length-1;i>=0;i--){const n=G.notifications[i];n.life-=dt;n.y-=.38*(dt/16);if(n.life<=0)G.notifications.splice(i,1);}}
 function drawNotifications(G){const ctx=G.ctx,base=G.H*.72;G.notifications.forEach((n,i)=>{const a=Math.min(1,n.life/Math.min(n.maxLife,400));ctx.save();ctx.globalAlpha=a;const sz=n.scale?13*n.scale:13;ctx.font=`bold ${sz}px 'Rajdhani',sans-serif`;ctx.textAlign="center";ctx.fillStyle=n.color;ctx.shadowBlur=8;ctx.shadowColor=n.color;ctx.fillText(n.text,G.W/2,base+n.y-i*20);ctx.restore();});}
 
@@ -1364,6 +1751,12 @@ function autoSave(G){
       shadows:G.shadows.map(s=>({...s})),
       shadowLimit:G.shadowLimit,
       stats:{...G.stats},
+      milestones:{...G._unlockedMilestones},
+      buildType:G.buildType,
+      prestige:JSON.parse(JSON.stringify(G.prestige||{})),
+      skillUpgrades:{...(G._skillUpgrades||{})},
+      quests:(G.quests||[]).map(q=>({...q})),
+      questLastRefresh:G.questLastRefresh||0,
     };
     for(const[k,v]of Object.entries(G.inventory.equipped))data.inventory.equipped[k]=v?{...v}:null;
     localStorage.setItem(SAVE_KEY,JSON.stringify(data));
@@ -1388,6 +1781,12 @@ function loadSave(G){
     G.shadows=data.shadows||[];
     G.shadowLimit=data.shadowLimit||3;
     G.stats=data.stats||{kills:0,bossKills:0,dungeonsCleared:0,shadowsExtracted:0};
+    G._unlockedMilestones=data.milestones||{};
+    G.buildType=data.buildType||"NONE";
+    if(data.prestige)G.prestige=Object.assign({tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0},data.prestige);
+    if(data.quests&&data.quests.length)G.quests=data.quests;
+    if(data.skillUpgrades)G._skillUpgrades={...data.skillUpgrades};
+    G.questLastRefresh=data.questLastRefresh||0;
     return true;
   }catch(e){return false;}
 }
@@ -1401,7 +1800,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAllPanels();});
 function pickPortalRank(){const r=Math.random();for(const[rank,prob]of CONFIG.portalWeights)if(r<=prob)return rank;return"E";}
 function spawnPortal(G,type,x,y,rank){G.portals.push({id:G.nextPortalId++,x,y,r:28,rank:rank||pickPortalRank(),active:true,type,pulse:0,life:CONFIG.portalLifespan});}
 function spawnEntryPortal(G){let x,y,a=0;do{x=80+Math.random()*(G.W-160);y=80+Math.random()*(G.H-160);a++;}while(Math.hypot(x-G.player.x,y-G.player.y)<220&&a<30);spawnPortal(G,"ENTRY",x,y,pickPortalRank());notify(G,"⬡ A Gate has appeared!","#aaccff");}
-function spawnExitPortal(G){const a=Math.random()*Math.PI*2;spawnPortal(G,"EXIT",G.player.x+Math.cos(a)*120,G.player.y+Math.sin(a)*120,G.dungeon.rank);}
+function spawnExitPortal(G){const a=Math.random()*Math.PI*2;G.portals.push({id:G.nextPortalId++,x:G.player.x+Math.cos(a)*120,y:G.player.y+Math.sin(a)*120,r:28,rank:G.dungeon.rank,active:true,type:"EXIT",pulse:0,life:120000});}
 
 const ENEMY_COLORS={E:["#ff4455","#cc6677"],D:["#44aa66","#66cc88"],C:["#4488cc","#3366aa"],B:["#cc6600","#ff8800"],A:["#8833ff","#aa55ff"],S:["#ff33ff","#cc00cc"]};
 
@@ -1431,12 +1830,13 @@ function pickEnemyType(){
 // projectiles stored in G.projectiles
 function makeEnemy(G,x,y,sm){
   const rank=G.dungeon.active?G.dungeon.rank:"E";
+  const dungeonHpMult=(G.dungeon&&G.dungeon.active)?2.8:1;
   const ls=(1+(G.player.level-1)*.12)*(sm||1);
   const cols=ENEMY_COLORS[rank]||ENEMY_COLORS["E"];
   const type=pickEnemyType();
   const m=type.mod||{};
   const baseAtk=Math.round(8*ls*(m.atk||1));
-  const baseHp=Math.round(80*ls*(m.hp||1));
+  const baseHp=Math.round(80*ls*dungeonHpMult*(m.hp||1));
   const baseSpeed=(.9+Math.random()*.5)*(1+(G.player.level-1)*.04)*(sm?1.2:1)*(m.speed||1);
   return{
     id:G.nextEnemyId++,x,y,r:14+Math.random()*4,
@@ -1456,9 +1856,9 @@ function makeEnemy(G,x,y,sm){
 function spawnEnemy(G){const side=Math.floor(Math.random()*4),pad=40;let x,y;switch(side){case 0:x=Math.random()*G.W;y=-pad;break;case 1:x=G.W+pad;y=Math.random()*G.H;break;case 2:x=Math.random()*G.W;y=G.H+pad;break;default:x=-pad;y=Math.random()*G.H;}G.enemies.push(makeEnemy(G,x,y,1));}
 function spawnDungeonEnemy(G){const pad=60;let x,y;const side=Math.floor(Math.random()*4);switch(side){case 0:x=pad+Math.random()*(G.W-pad*2);y=pad;break;case 1:x=G.W-pad;y=pad+Math.random()*(G.H-pad*2);break;case 2:x=pad+Math.random()*(G.W-pad*2);y=G.H-pad;break;default:x=pad;y=pad+Math.random()*(G.H-pad*2);}G.enemies.push(makeEnemy(G,x,y,CONFIG.dungeonScale[G.dungeon.rank]||1));}
 const BOSS_DEFS={E:{name:"Stone Golem",icon:"🗿"},D:{name:"Ancient Treant",icon:"🌳"},C:{name:"Tomb Guardian",icon:"🏺"},B:{name:"Flame Monarch",icon:"😈"},A:{name:"Querehsha",icon:"🕷️"},S:{name:"Antares",icon:"🐉"}};
-function spawnBoss(G){const rs=CONFIG.dungeonScale[G.dungeon.rank]||1;const hp=Math.round(650*rs*(1+(G.player.level-1)*.1));const def=BOSS_DEFS[G.dungeon.rank]||BOSS_DEFS["E"];G.boss={x:G.W/2,y:G.H/2,r:34,name:def.name,icon:def.icon,hp,maxHp:hp,speed:1.4*Math.sqrt(rs),atk:Math.round(22*rs),atkRate:900,atkTimer:0,atkSpecialTimer:0,dead:false,phase:1,flashTimer:0,stunTimer:0,state:"ALIVE",extractable:false,extracted:false,dungeonRank:G.dungeon.rank};showBossWarn(def.name);}
+function spawnBoss(G){const rs=CONFIG.dungeonScale[G.dungeon.rank]||1;const hp=Math.round(3200*rs*(1+(G.player.level-1)*.1));const def=BOSS_DEFS[G.dungeon.rank]||BOSS_DEFS["E"];G.boss={x:G.W/2,y:G.H/2,r:34,name:def.name,icon:def.icon,hp,maxHp:hp,speed:1.4*Math.sqrt(rs),atk:Math.round(22*rs),atkRate:900,atkTimer:0,atkSpecialTimer:0,dead:false,phase:1,flashTimer:0,stunTimer:0,state:"ALIVE",extractable:false,extracted:false,dungeonRank:G.dungeon.rank};showBossWarn(def.name);}
 
-function startWave(G,wave){G.dungeon.wave=wave;G.dungeon.waveActive=true;G.dungeon.betweenWaveTimer=0;G.enemies=[];G.boss=null;if(wave===1){for(let i=0;i<5;i++)spawnDungeonEnemy(G);notify(G,"⚔ WAVE 1","#ffcc44");flashLevelUp("WAVE 1");}else if(wave===2){for(let i=0;i<8;i++)spawnDungeonEnemy(G);notify(G,"⚔ WAVE 2","#ffcc44");flashLevelUp("WAVE 2");}else if(wave===3){spawnBoss(G);notify(G,`⚠ BOSS: ${G.boss.name}!`,"#ff4444");flashLevelUp("⚠ BOSS");}}
+function startWave(G,wave){G.dungeon.wave=wave;G.dungeon.waveActive=true;G.dungeon.betweenWaveTimer=0;G.enemies=[];G.boss=null;if(wave===1){for(let i=0;i<7;i++)spawnDungeonEnemy(G);notify(G,"⚔ WAVE 1 — HOLD THE LINE","#ffcc44");flashLevelUp("WAVE 1");}else if(wave===2){for(let i=0;i<11;i++)spawnDungeonEnemy(G);notify(G,"⚔ WAVE 2 — ELITE RESISTANCE","#ffcc44");flashLevelUp("WAVE 2");}else if(wave===3){spawnBoss(G);for(let i=0;i<3;i++)spawnDungeonEnemy(G);notify(G,`⚠ BOSS: ${G.boss.name}!`,"#ff4444");flashLevelUp("⚠ BOSS");}}
 function enterDungeon(G,portal){G.mode="DUNGEON";G.dungeon.active=true;G.dungeon.rank=portal.rank;G.dungeon.wave=0;G.dungeon.cleared=false;G.dungeon.waveActive=false;G.dungeon.betweenWaveTimer=1200;G.dungeon.bossDefeated=false;G.enemies=[];G.boss=null;G.portals=[];AudioEngine.play('gate',.6);flashScreen('#3388ff',.35,600);notify(G,`Entering ${portal.rank}-Rank Gate...`,"#aaccff");}
 function exitDungeon(G){G.mode="OPEN_WORLD";G.dungeon.active=false;G.dungeon.rank=null;G.dungeon.wave=0;G.dungeon.cleared=false;G.dungeon.waveActive=false;G.dungeon.bossDefeated=false;G.enemies=[];G.boss=null;G.portals=[];G.spawner.timer=0;for(let i=0;i<4;i++)spawnEnemy(G);notify(G,"Returned to Open World","#88ffbb");AudioEngine.play('gate',.4);autoSave(G);}
 
@@ -1470,11 +1870,120 @@ if(crit&&Object.values(G.inventory.equipped).some(item=>item&&item.name==="Jinwo
 }
 if(e.hp<=0){e.hp=0;if(isBoss){e.dead=true;killBoss(G);}else{e.state="DEAD";e.deathTimer=1500;e.extractable=true;killEnemy(G,e);}}}
 function allTargets(G){return[...G.enemies.filter(e=>e.state==="ALIVE"),...(G.boss&&!G.boss.dead?[G.boss]:[])];}
-function doBasicAttack(G){const p=G.player;p.atkCooldown=p.atkRate;p.atkFlash=120;G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:p.atkRange,life:160,maxLife:160});let hit=false;let hadCrit=false;const critChance=Math.min(.80,.15+(p.critBonus||0));for(const e of allTargets(G)){const dist=Math.hypot(e.x-p.x,e.y-p.y);if(dist<p.atkRange+e.r){const crit=Math.random()<critChance,dmg=Math.max(1,Math.round(p.atkDamage*(crit?2.2:1)));hit=true;if(crit){hadCrit=true;hitStop(2);screenShake(3.5);}damageTarget(G,e,dmg,crit);e.x+=(e.x-p.x)/(dist||1)*5;e.y+=(e.y-p.y)/(dist||1)*5;}}if(hit){spawnParticles(G,p.x,p.y,6,"#7b35ff",2.5);Combo.hit();KillStreak.tick&&null;AudioEngine.play(hadCrit?'crit':'hit',.2);}}
-function doMutilation(G){const p=G.player;let hit=false;for(let h=0;h<3;h++)for(const e of allTargets(G))if(Math.hypot(e.x-p.x,e.y-p.y)<p.atkRange+e.r+10){damageTarget(G,e,Math.max(1,Math.round(p.atkDamage*.65)),false);hit=true;}G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:p.atkRange*1.2,life:200,maxLife:200,color:"#ff5544"});if(hit){spawnParticles(G,p.x,p.y,10,"#ff3322",3);notify(G,"🗡 MUTILATION!","#ff8866",1000);AudioEngine.play('crit',.35);screenShake(4);hitStop(3);for(let i=0;i<3;i++)Combo.hit();}}
-function doStealth(G){const p=G.player;let hit=false;for(const e of allTargets(G))if(Math.hypot(e.x-p.x,e.y-p.y)<p.atkRange+e.r+20){damageTarget(G,e,Math.round(p.atkDamage*3.2),true);hit=true;}spawnParticles(G,p.x,p.y,14,"#330066",4);G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:p.atkRange*1.5,life:250,maxLife:250,color:"#8800ff"});if(hit){notify(G,"🌑 SHADOW STRIKE!","#aa44ff",1200);AudioEngine.play('crit',.4);flashScreen('#220044',.3,250);screenShake(5);hitStop(4);for(let i=0;i<5;i++)Combo.hit();}}
-function doAuthority(G){const p=G.player,PULL=200;let pulled=0;for(const e of allTargets(G)){const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<PULL){e.x+=(p.x-e.x)*.6;e.y+=(p.y-e.y)*.6;e.stunTimer=1200;pulled++;damageTarget(G,e,Math.round(p.atkDamage*.8),false);}}spawnParticles(G,p.x,p.y,18,"#5533ff",5);if(pulled){notify(G,`✋ Pulled ${pulled}!`,"#6644ff",1200);AudioEngine.play('crit',.3);screenShake(6+pulled);for(let i=0;i<pulled;i++)Combo.hit();}}
-function doDomain(G){const p=G.player,RANGE=p.atkRange*2.5;let hit=0;for(const e of allTargets(G))if(Math.hypot(e.x-p.x,e.y-p.y)<RANGE){damageTarget(G,e,Math.round(p.atkDamage*2.0),false);hit++;}for(const sh of G.shadows)for(const e of allTargets(G))if(e.state==="ALIVE")damageTarget(G,e,Math.round(sh.atk*3),false);G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:RANGE,life:350,maxLife:350,color:"#ffdd00"});spawnParticles(G,p.x,p.y,25,"#aa6600",4.5);spawnParticles(G,p.x,p.y,15,"#ffcc00",6);notify(G,`👑 DOMAIN EXPANDED! (${hit} hit)`,"#ffd700",1800);AudioEngine.play('rankup',.5);flashScreen('#ffd700',.35,500);screenShake(10,.72);hitStop(5);for(let i=0;i<hit;i++)Combo.hit();}
+function doBasicAttack(G){
+  const p=G.player;p.atkCooldown=p.atkRate;p.atkFlash=120;
+  G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:p.atkRange,life:160,maxLife:160});
+  let hit=false;let hadCrit=false;
+  const baseCrit=Math.min(.95,.15+(p.critBonus||0));
+  const critOverride=buildSkillMult(G,"crit_chance");
+  const critChance=critOverride!==null?Math.min(.95,critOverride):baseCrit;
+  const dmgMult=buildSkillMult(G,"atk");
+  // SPEED BUILD: double attack if combo >= 5
+  const doubleAtk=G.buildType==="SPEED"&&(G._unlockedMilestones?.blur)&&Combo.count>=5;
+  const attackCount=doubleAtk?2:1;
+  for(let pass=0;pass<attackCount;pass++){
+    for(const e of allTargets(G)){
+      const dist=Math.hypot(e.x-p.x,e.y-p.y);
+      if(dist<p.atkRange+e.r){
+        const crit=Math.random()<critChance;
+        let dmg=Math.max(1,Math.round(p.atkDamage*(crit?2.2:1)*dmgMult));
+        hit=true;
+        if(crit){hadCrit=true;hitStop(2);screenShake(3.5);
+          // CRIT CASCADE milestone: each crit reduces CDs
+          if(G.buildType==="CRIT"&&G._unlockedMilestones?.cascade){
+            for(const ab of Object.values(G.abilities))if(ab.cd>0)ab.cd=Math.max(0,ab.cd-300);
+          }
+        }
+        // BLEED_ON_HIT affix or bleed build
+        if(p._bleedOnHit||G.buildType==="BLEED"){e.bleed=3000+(G._unlockedMilestones?.hemorrhage?3000:0);e.bleedDmg=(G._unlockedMilestones?.hemorrhage?10:5);}
+        damageTarget(G,e,dmg,crit);
+        e.x+=(e.x-p.x)/(dist||1)*5;e.y+=(e.y-p.y)/(dist||1)*5;
+      }
+    }
+  }
+  if(hit){
+    const particleColor=G.buildType==="CRIT"?"#ff6600":G.buildType==="SHADOW"?"#6622cc":G.buildType==="BLEED"?"#ff2244":G.buildType==="SPEED"?"#00ddff":"#7b35ff";
+    spawnParticles(G,p.x,p.y,6,particleColor,2.5);
+    Combo.hit();AudioEngine.play(hadCrit?'crit':'hit',.2);
+  }
+}
+function doMutilation(G){
+  const p=G.player;let hit=false;
+  const su=G._skillUpgrades||{};
+  const hits=G.buildType==="CRIT"?4:(su.mut_extraHit?4:3);// CRIT BUILD or upgrade: 4-hit flurry
+  const dmgMult=buildSkillMult(G,"atk");
+  for(let h=0;h<hits;h++)for(const e of allTargets(G))if(Math.hypot(e.x-p.x,e.y-p.y)<p.atkRange+e.r+10){
+    const dmg=Math.max(1,Math.round(p.atkDamage*.65*dmgMult));
+    const forceCrit=G.buildType==="CRIT"&&h===hits-1;// last hit guaranteed crit for crit build
+    damageTarget(G,e,dmg,forceCrit);hit=true;
+    if(G.buildType==="BLEED"){e.bleed=4000;e.bleedDmg=8;}
+  }
+  // SHADOW BUILD: echo from each shadow
+  if(G.buildType==="SHADOW"){
+    for(const sh of G.shadows)for(const e of allTargets(G))if(Math.hypot(e.x-sh.x,e.y-sh.y)<60+e.r)damageTarget(G,e,Math.round(sh.atk*.8*(1+(p._shadowPower||0))),false);
+  }
+  G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:p.atkRange*1.2,life:200,maxLife:200,color:"#ff5544"});
+  if(hit){spawnParticles(G,p.x,p.y,10,"#ff3322",3);notify(G,`🗡 MUTILATION${G.buildType==="CRIT"?" ×4":""}!`,"#ff8866",1000);AudioEngine.play('crit',.35);screenShake(4);hitStop(3);for(let i=0;i<3;i++)Combo.hit();}
+}
+function doStealth(G){
+  const p=G.player;let hit=false;
+  const dmgMult=buildSkillMult(G,"atk");
+  const rangeMult=buildSkillMult(G,"aoe_range");
+  for(const e of allTargets(G))if(Math.hypot(e.x-p.x,e.y-p.y)<(p.atkRange+e.r+20)*rangeMult){
+    damageTarget(G,e,Math.round(p.atkDamage*3.2*dmgMult),true);hit=true;
+    // BLEED BUILD: always applies hemorrhage-level bleed
+    if(G.buildType==="BLEED"){e.bleed=G._unlockedMilestones?.hemorrhage?9000:4500;e.bleedDmg=G._unlockedMilestones?.hemorrhage?16:8;}
+    // SHADOW BUILD: each shadow also strikes the target
+    if(G.buildType==="SHADOW"&&(p._shadowPower||0)>0){
+      for(const sh of G.shadows)if(Math.hypot(e.x-sh.x,e.y-sh.y)<300)damageTarget(G,e,Math.round(sh.atk*1.5*(1+(p._shadowPower||0))),true);
+    }
+  }
+  spawnParticles(G,p.x,p.y,14,"#330066",4);
+  G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:p.atkRange*1.5*rangeMult,life:250,maxLife:250,color:"#8800ff"});
+  if(hit){notify(G,"🌑 SHADOW STRIKE!","#aa44ff",1200);AudioEngine.play('crit',.4);flashScreen('#220044',.3,250);screenShake(5);hitStop(4);for(let i=0;i<5;i++)Combo.hit();}
+}
+function doAuthority(G){
+  const su=G._skillUpgrades||{};
+  const p=G.player,PULL=su.aut_range?250:200;let pulled=0;
+  const passes=G.buildType==="SPEED"?2:1;// SPEED BUILD: Authority fires twice
+  for(let pass=0;pass<passes;pass++){
+    for(const e of allTargets(G)){const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<PULL){if(pass===0){e.x+=(p.x-e.x)*.6;e.y+=(p.y-e.y)*.6;e.stunTimer=G._skillUpgrades?.aut_longstun?2500:1200;pulled++;}damageTarget(G,e,Math.round(p.atkDamage*.8),false);}}
+  }
+  // TANK BUILD: Authority also grants temporary defense boost
+  if(G.buildType==="TANK"){p.defense+=8;setTimeout(()=>p.defense=Math.max(0,p.defense-8),3000);notify(G,"🛡 Defense surge!","#888888",1000);}
+  spawnParticles(G,p.x,p.y,18,"#5533ff",5);
+  if(pulled){notify(G,`✋ Pulled ${pulled}${passes===2?" ×2":""}!`,"#6644ff",1200);AudioEngine.play('crit',.3);screenShake(6+pulled);for(let i=0;i<pulled;i++)Combo.hit();}
+}
+function doDomain(G){
+  const p=G.player;
+  const rangeMult=buildSkillMult(G,"aoe_range");
+  const RANGE=p.atkRange*2.5*rangeMult*(G._skillUpgrades?.dom_size?1.4:1);
+  const dmgMult=buildSkillMult(G,"atk");
+  let hit=0;
+  for(const e of allTargets(G))if(Math.hypot(e.x-p.x,e.y-p.y)<RANGE){
+    damageTarget(G,e,Math.round(p.atkDamage*2.0*dmgMult),false);hit++;
+    // BLEED BUILD: domain spreads bleed to all hit
+    if(G.buildType==="BLEED"){e.bleed=5000;e.bleedDmg=G._unlockedMilestones?.hemorrhage?14:7;}
+  }
+  // SHADOW BUILD: monarch's shadow swarm — all shadows burst
+  const shadowPow=1+(p._shadowPower||0);
+  for(const sh of G.shadows){
+    for(const e of allTargets(G))if(e.state==="ALIVE"){
+      const mult=G.buildType==="SHADOW"?4.0:3.0;
+      damageTarget(G,e,Math.round(sh.atk*mult*shadowPow),false);
+    }
+  }
+  // SPEED BUILD: Domain resets all cooldowns
+  if(G.buildType==="SPEED"){
+    for(const ab of Object.values(G.abilities))ab.cd=0;
+    notify(G,"💨 SPEED RESET — all CDs cleared!","#00ddff",1500);
+  }
+  G.effects.slashRings.push({x:p.x,y:p.y,r:p.r,maxR:RANGE,life:350,maxLife:350,color:"#ffdd00"});
+  spawnParticles(G,p.x,p.y,25,"#aa6600",4.5);spawnParticles(G,p.x,p.y,15,"#ffcc00",6);
+  notify(G,`👑 DOMAIN EXPANDED! (${hit} hit)`,"#ffd700",1800);
+  AudioEngine.play('rankup',.5);flashScreen('#ffd700',.35,500);screenShake(10,.72);hitStop(5);
+  for(let i=0;i<hit;i++)Combo.hit();
+}
 function tryAbility(G,id){const ab=ABILITIES.find(a=>a.id===id);if(!ab)return;const s=G.abilities[id];if(!s)return;if(s.cd>0){notify(G,`${ab.name} on cooldown`,"#ff6680",800);return;}const mpFree=G.dailyMod?.mpFree;if(!mpFree&&G.player.mp<ab.mpCost){notify(G,"Not enough MP","#4499ff",800);return;}if(!mpFree)G.player.mp=Math.max(0,G.player.mp-ab.mpCost);s.cd=s.maxCd;ab.fn(G);}
 
 function tryExtract(G){const p=G.player;if(p.extractCooldown>0){notify(G,"Extraction on cooldown","#ff6680");return;}if(G.shadows.length>=G.shadowLimit){notify(G,"Shadow limit reached","#ff6680");return;}let best=null,bestDist=80;for(const e of G.enemies){if(e.state!=="DEAD"||e.extracted||!e.extractable)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bestDist){best=e;bestDist=d;}}if(G.boss&&G.boss.state==="DEAD"&&!G.boss.extracted&&G.boss.extractable){const d=Math.hypot(G.boss.x-p.x,G.boss.y-p.y);if(d<bestDist){best=G.boss;bestDist=d;}}if(!best){notify(G,"No extractable target nearby","#ff6680");return;}const isBoss=G.boss===best;const hasShadowCore=Object.values(G.inventory.equipped).some(item=>item&&item.name==="Shadow Core");const baseChance=isBoss?CONFIG.extractBossChance:(CONFIG.extractChance[best.dungeonRank]||.5);const extractMult=(G.dailyMod?.extractMult)||1;const chance=hasShadowCore?1:Math.min(1,baseChance*extractMult);best.extracted=true;p.extractCooldown=3000;if(Math.random()<chance){spawnShadow(G,best,isBoss?2:0);G.stats.shadowsExtracted++;autoSave(G);}else{notify(G,"✗ Extraction failed","#ff6680");spawnParticles(G,best.x,best.y,6,"#440044",1.5);}}
@@ -1564,7 +2073,16 @@ function updateInteraction(G,dt){
 
 function updateMovement(G,dt){const p=G.player;let dx=0,dy=0;if(G.keys["ArrowLeft"]||G.keys["a"]||G.keys["A"])dx-=1;if(G.keys["ArrowRight"]||G.keys["d"]||G.keys["D"])dx+=1;if(G.keys["ArrowUp"]||G.keys["w"]||G.keys["W"])dy-=1;if(G.keys["ArrowDown"]||G.keys["s"]||G.keys["S"])dy+=1;if(G.joy.active){dx=G.joy.dx;dy=G.joy.dy;}const mag=Math.sqrt(dx*dx+dy*dy);if(mag>.01){const spd=G.joy.active?p.speed*Math.min(mag,1):p.speed;p.x+=(dx/mag)*spd*(dt/16);p.y+=(dy/mag)*spd*(dt/16);if(Math.abs(dx/mag)>.1)p.facing=dx>0?1:-1;}p.x=Math.max(p.r,Math.min(G.W-p.r,p.x));p.y=Math.max(p.r,Math.min(G.H-p.r,p.y));}
 
-function updateRegen(G,dt){const p=G.player;p.mp=Math.min(p.maxMp,p.mp+CONFIG.player.mpRegen*dt);if(p.gateKeys<p.maxGateKeys){p.keyRegenTimer+=dt;if(p.keyRegenTimer>=CONFIG.player.keyRegenTime){p.keyRegenTimer=0;p.gateKeys++;notify(G,"🗝 Gate Key regenerated!","#ffd700");}}else p.keyRegenTimer=0;for(const ab of ABILITIES){const s=G.abilities[ab.id];if(s&&s.cd>0)s.cd-=dt;}}
+function updateRegen(G,dt){
+  const p=G.player;p.mp=Math.min(p.maxMp,p.mp+CONFIG.player.mpRegen*dt);
+  if(p.gateKeys<p.maxGateKeys){p.keyRegenTimer+=dt;if(p.keyRegenTimer>=CONFIG.player.keyRegenTime){p.keyRegenTimer=0;p.gateKeys++;notify(G,"🗝 Gate Key regenerated!","#ffd700");}}
+  else p.keyRegenTimer=0;
+  // Cooldown reduction — speed build 20%, with milestone .8 multiplier already in buildSkillMult
+  const cdMult=buildSkillMult(G,"cd_reduction");
+  for(const ab of ABILITIES){const s=G.abilities[ab.id];if(s&&s.cd>0)s.cd-=dt*( 1/cdMult);}
+  // Regenerator shadow trait: heal shadows
+  for(const sh of G.shadows){if(sh.identity?.traits?.some(t=>t.id==="regenerator"))sh.hp=Math.min(sh.maxHp,sh.hp+dt*.005);}
+}
 
 function updateCombat(G,dt){const p=G.player;p.atkFlash=Math.max(0,p.atkFlash-dt);if(p.atkCooldown>0)p.atkCooldown-=dt;const wants=G.keys[" "]||G.keys["_CLICK"]||G.keys["_TOUCH_ATK"];if(wants&&p.atkCooldown<=0){G.keys["_CLICK"]=false;doBasicAttack(G);}}
 function quickPotion(G){const pot=G.inventory.consumables.find(c=>c.effect&&c.effect.hp);if(!pot){notify(G,"No potions","#ff6680",900);return;}G.player.hp=Math.min(G.player.maxHp,G.player.hp+(pot.effect.hp||0));G.inventory.consumables.splice(G.inventory.consumables.indexOf(pot),1);notify(G,`${pot.icon} Used ${pot.name} (+${pot.effect.hp} HP)`,"#88ff88");}
@@ -1574,6 +2092,7 @@ function tickEnemyAI(G,dt){const p=G.player;for(const e of G.enemies){if(e.state
 
   // --- TYPE BEHAVIORS ---
   if(e.type==="ranged"){
+    if(e.stunTimer>0)continue;
     // Keep at range, shoot projectiles
     const idealDist=180;
     if(dist<idealDist-30){// back away
@@ -1602,10 +2121,10 @@ function tickEnemyAI(G,dt){const p=G.player;for(const e of G.enemies){if(e.state
         if(p.hp<=0)G.mode="DEAD";
         e.charging=false;e.chargeCooldown=2500;
       }
-      e.life=(e.life||0)-dt;if((e.life||0)<=0)e.charging=false;
+      e.chargeLife=(e.chargeLife||0)-dt;if((e.chargeLife||0)<=0)e.charging=false;
     } else if(dist<280&&e.chargeCooldown<=0){
       // Wind up charge
-      e.charging=true;e.life=400;e.chargeCooldown=3000;
+      e.charging=true;e.chargeLife=400;e.chargeCooldown=3000;
       const ang=Math.atan2(dy,dx),spd=10;
       e.chargeVx=Math.cos(ang)*spd;e.chargeVy=Math.sin(ang)*spd;
       // Visual telegraph
@@ -1633,9 +2152,19 @@ function updateBossAI(G,dt){const boss=G.boss;if(!boss||boss.dead)return;const p
 if(boss.hp<boss.maxHp*.1&&boss.phase===2){boss.phase=3;boss.speed*=1.4;boss.atkRate=600;notify(G,"☠ FINAL PHASE — SURVIVE!","#ff0000",2000);flashScreen('#ff0000',.6,800);screenShake(12);}
 const dx=p.x-boss.x,dy=p.y-boss.y,dist=Math.sqrt(dx*dx+dy*dy)||1,contact=p.r+boss.r+2;if(dist>contact){boss.x+=(dx/dist)*boss.speed*(dt/16);boss.y+=(dy/dist)*boss.speed*(dt/16);}else{boss.atkTimer+=dt;boss.atkSpecialTimer+=dt;if(boss.atkTimer>=boss.atkRate){boss.atkTimer=0;let dmg=Math.max(1,boss.atk-Math.floor(p.defense/2));if(G.dailyMod?.enemyDmgMult)dmg=Math.round(dmg*G.dailyMod.enemyDmgMult);// Beru's Carapace passive
 const hasBeru=Object.values(G.inventory.equipped).some(item=>item&&item.name==="Beru's Carapace");if(hasBeru&&p.hp-dmg<=0&&!p._beruUsed){p._beruUsed=true;p.hp=1;spawnParticles(G,p.x,p.y,20,"#44ff88",3);notify(G,"🦂 Beru's Carapace: SURVIVED!","#44ff88",2000);setTimeout(()=>{p._beruUsed=false;},60000);AudioEngine.play('levelup',.6);return;}
-p.hp=Math.max(0,p.hp-dmg);spawnDmgText(G,p.x+(Math.random()-.5)*20,p.y-24,`-${dmg}`,"#ff2244");flashHitVignette();if(p.hp<=0)G.mode="DEAD";}if(boss.atkSpecialTimer>6000){boss.atkSpecialTimer=0;const dmg=Math.round(boss.atk*1.8);p.hp=Math.max(0,p.hp-dmg);spawnParticles(G,p.x,p.y,12,"#ff2200",3);if(p.hp<=0)G.mode="DEAD";}}}
+p.hp=Math.max(0,p.hp-dmg);spawnDmgText(G,p.x+(Math.random()-.5)*20,p.y-24,`-${dmg}`,"#ff2244");flashHitVignette();if(p.hp<=0)G.mode="DEAD";}if(boss.atkSpecialTimer>6000){boss.atkSpecialTimer=0;
+  if(boss.phase>=2){
+    // Projectile burst: 8 radial projectiles
+    for(let pi=0;pi<8;pi++){const ang=(pi/8)*Math.PI*2;const spd=3.0+boss.phase*.5;G.projectiles.push({x:boss.x,y:boss.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,dmg:Math.round(boss.atk*.6),r:7,life:2500,color:"#ff3300",owner:"enemy"});}
+    spawnParticles(G,boss.x,boss.y,16,"#ff3300",4);
+    AudioEngine.play("crit",.4);screenShake(4);
+    notify(G,"⚠ Boss unleashes!","#ff4444",1200);
+  } else {
+    const dmg=Math.round(boss.atk*1.8);p.hp=Math.max(0,p.hp-dmg);spawnParticles(G,p.x,p.y,12,"#ff2200",3);if(p.hp<=0)G.mode="DEAD";
+  }
+}}}
 
-function updatePortalSpawner(G,dt){if(G.mode!=="OPEN_WORLD")return;for(let i=G.portals.length-1;i>=0;i--){const portal=G.portals[i];portal.pulse=(portal.pulse+dt*.003)%(Math.PI*2);if(portal.type==="ENTRY"){portal.life-=dt;if(portal.life<=0){G.portals.splice(i,1);continue;}}}const hasEntry=G.portals.some(p=>p.type==="ENTRY"&&p.active);if(!hasEntry){G.portalSpawnTimer+=dt;if(G.portalSpawnTimer>=G.portalSpawnRate){G.portalSpawnTimer=0;spawnEntryPortal(G);}}}
+function updatePortalSpawner(G,dt){if(G.mode!=="OPEN_WORLD")return;for(let i=G.portals.length-1;i>=0;i--){const portal=G.portals[i];portal.pulse=(portal.pulse+dt*.003)%(Math.PI*2);portal.life-=dt;if(portal.life<=0){G.portals.splice(i,1);continue;}}const hasEntry=G.portals.some(p=>p.type==="ENTRY"&&p.active);if(!hasEntry){G.portalSpawnTimer+=dt;if(G.portalSpawnTimer>=G.portalSpawnRate){G.portalSpawnTimer=0;spawnEntryPortal(G);}}}
 function updateOpenWorldEnemies(G,dt){
   G.spawner.timer+=dt;
   const alive=G.enemies.filter(e=>e.state==="ALIVE").length;
@@ -1651,7 +2180,8 @@ function updateOpenWorldEnemies(G,dt){
   }
   tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);
 }
-function updateDungeon(G,dt){const d=G.dungeon;if(d.bossDefeated&&!d.cleared){d.cleared=true;d.waveActive=false;G.stats.dungeonsCleared++;spawnExitPortal(G);notify(G,"★ DUNGEON CLEARED!","#ffd700");flashLevelUp("DUNGEON CLEARED!");spawnParticles(G,G.player.x,G.player.y,20,"#ffd700",4);AudioEngine.play('rankup',.8);flashScreen('#ffd700',.4,1000);screenShake(8);}if(!d.waveActive){d.betweenWaveTimer-=dt;if(d.betweenWaveTimer<=0&&!d.cleared)startWave(G,d.wave+1);tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);return;}tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);if(d.wave<3&&G.enemies.filter(e=>e.state==="ALIVE").length===0&&d.waveActive){d.waveActive=false;d.betweenWaveTimer=1600;notify(G,"Wave cleared!","#88ffbb");AudioEngine.play('levelup',.4);}}
+function updateDungeon(G,dt){const d=G.dungeon;if(d.bossDefeated&&!d.cleared){d.cleared=true;d.waveActive=false;G.stats.dungeonsCleared++;spawnExitPortal(G);
+if(G._questStats&&['B','A','S'].includes(G.dungeon.rank))G._questStats.bRankClear=(G._questStats.bRankClear||0)+1;notify(G,"★ DUNGEON CLEARED!","#ffd700");flashLevelUp("DUNGEON CLEARED!");spawnParticles(G,G.player.x,G.player.y,20,"#ffd700",4);AudioEngine.play('rankup',.8);flashScreen('#ffd700',.4,1000);screenShake(8);}if(!d.waveActive){d.betweenWaveTimer-=dt;if(d.betweenWaveTimer<=0&&!d.cleared)startWave(G,d.wave+1);tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);return;}tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);if(d.wave<3&&G.enemies.filter(e=>e.state==="ALIVE").length===0&&d.waveActive){d.waveActive=false;d.betweenWaveTimer=1600;notify(G,"Wave cleared!","#88ffbb");AudioEngine.play('levelup',.4);}}
 function tickProjectiles(G,dt){
   if(!G.projectiles)G.projectiles=[];
   const p=G.player;
@@ -1708,7 +2238,7 @@ function killEnemy(G,e){
   tryDropLoot(G,e.dungeonRank||"E",false);
 }
 function killBoss(G){G.stats.kills++;G.stats.bossKills++;const boss=G.boss;spawnDmgText(G,boss.x,boss.y-50,"BOSS SLAIN","#ffd700");spawnParticles(G,boss.x,boss.y,30,"#ff6200",5);spawnParticles(G,boss.x,boss.y,20,"#ffd700",3.5);awardXP(G,CONFIG.xp.bossKill);AudioEngine.play('rankup',.8);flashScreen('#ffd700',.5,700);screenShake(14,.7);hitStop(6);const p=G.player;if(p.gateKeys<p.maxGateKeys){p.gateKeys++;notify(G,"🗝 Gate Key obtained!","#ffd700");}const drops=2+Math.floor(Math.random()*3);for(let i=0;i<drops;i++)tryDropLoot(G,G.dungeon.rank,true);boss.state="DEAD";boss.deathTimer=4000;boss.extractable=true;G.dungeon.bossDefeated=true;XPOrbs.spawn(boss.x,boss.y,G.player.x,G.player.y,12);autoSave(G);}
-function awardXP(G,amount){const p=G.player;const mult=(G.dailyMod?.xpMult)||1;p.xp+=Math.round(amount*mult);while(p.xp>=p.xpNeeded){p.xp-=p.xpNeeded;levelUp(G);}}
+function awardXP(G,amount){const p=G.player;const xpPrestige=G.prestige?.passives?.xp_hunger?1.3:1;const mult=((G.dailyMod?.xpMult)||1)*xpPrestige;p.xp+=Math.round(amount*mult);while(p.xp>=p.xpNeeded){p.xp-=p.xpNeeded;levelUp(G);}}
 function levelUp(G){const p=G.player;p.level++;p.xpNeeded=CONFIG.xp.levelThreshold(p.level);const ri=Math.min(Math.floor((p.level-1)/5),CONFIG.ranks.length-1);const rankUp=ri>p.rankIdx;p.rankIdx=ri;p.maxHp+=22;p.hp=Math.min(p.hp+30,p.maxHp);p.maxMp+=8;p.mp=Math.min(p.mp+10,p.maxMp);p.atkDamage=Math.round(p.atkDamage*1.07);p.atkRange+=1.5;p.speed+=.06;p.statPoints+=5;if(rankUp){G.shadowLimit=Math.min(G.shadowLimit+1,8);const rc=CONFIG.rankColors[CONFIG.ranks[p.rankIdx]]||CONFIG.rankColors["E"];setTimeout(()=>RankCeremony.play(CONFIG.ranks[p.rankIdx],CONFIG.rankNames[p.rankIdx],rc.main),200);powerSpike(G,`⬆ RANK ${CONFIG.ranks[p.rankIdx]} — ${CONFIG.rankNames[p.rankIdx].toUpperCase()}`,"#ffd700");}else{notify(G,"⬆ LEVEL UP! +5 stat pts","#ffd700");AudioEngine.play('levelup',.45);flashScreen('#7b35ff',.2,350);screenShake(3);}flashLevelUp(rankUp?`RANK ${CONFIG.ranks[p.rankIdx]}`:"LEVEL UP");autoSave(G);}
 
 function updateEffects(G,dt){for(let i=G.effects.dmgTexts.length-1;i>=0;i--){const d=G.effects.dmgTexts[i];d.life-=dt;d.y-=d.vy*(dt/16);d.alpha=Math.max(0,d.life/d.maxLife);if(d.life<=0)G.effects.dmgTexts.splice(i,1);}for(let i=G.effects.particles.length-1;i>=0;i--){const p=G.effects.particles[i];p.life-=dt;p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vx*=.92;p.vy*=.92;p.alpha=Math.max(0,p.life/p.maxLife);if(p.life<=0)G.effects.particles.splice(i,1);}for(let i=G.effects.slashRings.length-1;i>=0;i--){const s=G.effects.slashRings[i];s.life-=dt;s.r=s.maxR*(1-s.life/s.maxLife);s.alpha=s.life/s.maxLife;if(s.life<=0)G.effects.slashRings.splice(i,1);}if(G.effects.equipFlash>0)G.effects.equipFlash-=dt;
@@ -1719,13 +2249,29 @@ function spawnParticles(G,x,y,count,color,speed){for(let i=0;i<count;i++){const 
 
 function render(G){
   const ctx=G.ctx,W=G.W,H=G.H;
-  ctx.clearRect(0,0,W,H);ctx.fillStyle=G.mode==="DUNGEON"?"#02020c":"#03030f";ctx.fillRect(0,0,W,H);
+  ctx.clearRect(0,0,W,H);
+  const _pal=G.mode==="DUNGEON"?(DUNGEON_PALETTES[G.dungeon.rank]||DUNGEON_PALETTES.E):null;
+  ctx.fillStyle=_pal?_pal.bg:"#03030f";ctx.fillRect(0,0,W,H);
   drawGrid(ctx,W,H,G.mode,G.dungeon.rank);drawPortals(G);drawSlashRings(G);drawParticles(G);
   drawCorpses(G);drawEnemies(G);drawBoss(G);drawShadows(G);drawProjectiles(G);drawPlayer(G);
   drawDmgTexts(G);drawBossHPBar(G);drawInteractionHint(G);drawDungeonOverlay(G);drawDailyModBanner(G);drawNotifications(G);
   updateHUD(G);updateSkillPad(G);
 }
-function drawGrid(ctx,W,H,mode,rank){const rc=CONFIG.rankColors[rank]||CONFIG.rankColors["E"];ctx.save();ctx.strokeStyle=mode==="DUNGEON"?rc.glow+"0a":"rgba(123,53,255,0.04)";ctx.lineWidth=1;for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}ctx.restore();}
+function drawGrid(ctx,W,H,mode,rank){
+  const pal=DUNGEON_PALETTES[rank]||DUNGEON_PALETTES.E;
+  ctx.save();
+  ctx.strokeStyle=mode==="DUNGEON"?pal.grid:"rgba(123,53,255,0.04)";
+  ctx.lineWidth=1;
+  for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // Dungeon: add corner vignette in rank color
+  if(mode==="DUNGEON"){
+    const rg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.25,W/2,H/2,Math.min(W,H)*.8);
+    rg.addColorStop(0,'transparent');rg.addColorStop(1,pal.accent+'1a');
+    ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+  }
+  ctx.restore();
+}
 function drawPortals(G){const ctx=G.ctx;for(const portal of G.portals){if(!portal.active)continue;const rc=CONFIG.rankColors[portal.rank]||CONFIG.rankColors["E"];const pulse=Math.sin(portal.pulse)*.3+.7,isExit=portal.type==="EXIT",lifeFade=portal.type==="ENTRY"?Math.min(1,portal.life/3000):1;ctx.save();ctx.globalAlpha=.12*pulse*lifeFade;ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r+12+Math.sin(portal.pulse)*4,0,Math.PI*2);ctx.fillStyle=rc.glow;ctx.shadowBlur=30;ctx.shadowColor=rc.glow;ctx.fill();ctx.restore();ctx.save();ctx.globalAlpha=(.5+.3*pulse)*lifeFade;ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r+6,0,Math.PI*2);ctx.strokeStyle=rc.main;ctx.lineWidth=isExit?3:2;ctx.shadowBlur=20;ctx.shadowColor=rc.main;ctx.stroke();ctx.restore();ctx.save();ctx.globalAlpha=(.7+.2*pulse)*lifeFade;ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r,0,Math.PI*2);const grad=ctx.createRadialGradient(portal.x,portal.y,0,portal.x,portal.y,portal.r);grad.addColorStop(0,rc.glow+"cc");grad.addColorStop(1,rc.main+"44");ctx.fillStyle=grad;ctx.shadowBlur=15;ctx.shadowColor=rc.main;ctx.fill();ctx.restore();const now=performance.now()*.001;ctx.save();ctx.globalAlpha=.6*lifeFade;ctx.translate(portal.x,portal.y);ctx.rotate(now*(isExit?-1.2:1.0));ctx.strokeStyle=rc.text;ctx.lineWidth=1.5;for(let i=0;i<4;i++){const a=(i/4)*Math.PI*2;ctx.beginPath();ctx.moveTo(Math.cos(a)*6,Math.sin(a)*6);ctx.lineTo(Math.cos(a)*portal.r*.7,Math.sin(a)*portal.r*.7);ctx.stroke();}ctx.restore();ctx.save();ctx.globalAlpha=lifeFade;ctx.font="bold 13px 'Rajdhani',sans-serif";ctx.textAlign="center";ctx.fillStyle=rc.text;ctx.shadowBlur=8;ctx.shadowColor=rc.main;ctx.fillText(isExit?"EXIT":`GATE ${portal.rank}`,portal.x,portal.y-portal.r-14);ctx.restore();}}
 function drawCorpses(G){const ctx=G.ctx;for(const e of G.enemies){if(e.state!=="DEAD")continue;const alpha=Math.max(0,e.deathTimer/1500)*.5;ctx.save();ctx.globalAlpha=alpha;ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fillStyle="#220008";ctx.shadowBlur=6;ctx.shadowColor="#440011";ctx.fill();if(e.extractable&&!e.extracted){ctx.font="bold 10px 'Share Tech Mono',monospace";ctx.textAlign="center";ctx.fillStyle="#aa66ff";ctx.fillText("Q",e.x,e.y+4);}ctx.restore();}if(G.boss&&G.boss.state==="DEAD"&&!G.boss.extracted){const alpha=Math.max(0,Math.min(1,G.boss.deathTimer/4000))*.6;ctx.save();ctx.globalAlpha=alpha;ctx.beginPath();ctx.arc(G.boss.x,G.boss.y,G.boss.r,0,Math.PI*2);ctx.fillStyle="#220000";ctx.shadowBlur=10;ctx.shadowColor="#440000";ctx.fill();if(G.boss.extractable){ctx.font="bold 12px 'Share Tech Mono',monospace";ctx.textAlign="center";ctx.fillStyle="#ff88ff";ctx.fillText("Q",G.boss.x,G.boss.y+5);}ctx.restore();}}
 function drawEnemies(G){const ctx=G.ctx;for(const e of G.enemies){if(e.state!=="ALIVE")continue;const fl=e.flashTimer>0,st=e.stunTimer>0;ctx.save();ctx.beginPath();ctx.arc(e.x,e.y+4,e.r*.75,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.35)";ctx.filter="blur(3px)";ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fillStyle=fl?"#ffffff":(st?"#9966ff":(e.color||"#ff2244"));ctx.shadowBlur=fl?25:14;ctx.shadowColor=fl?"#ffffff":(e.color||"#cc0022");ctx.fill();ctx.restore();
@@ -1741,7 +2287,10 @@ function drawBossHPBar(G){if(!G.boss||G.boss.dead||!G.dungeon.active)return;cons
 function drawInteractionHint(G){if(G.isTouch)return;const p=G.player,ctx=G.ctx;for(const portal of G.portals){if(!portal.active)continue;const dist=Math.hypot(p.x-portal.x,p.y-portal.y),reach=p.r+portal.r+10;if(dist<reach+55){const rc=CONFIG.rankColors[portal.rank]||CONFIG.rankColors["E"];const label=portal.type==="ENTRY"?`PRESS E TO ENTER [${portal.rank}-RANK GATE]`:"PRESS E TO EXIT DUNGEON";const alpha=dist<reach?1:1-((dist-reach)/55);ctx.save();ctx.globalAlpha=alpha;ctx.font="bold 13px 'Rajdhani',sans-serif";ctx.textAlign="center";ctx.fillStyle=rc.text;ctx.shadowBlur=10;ctx.shadowColor=rc.main;ctx.fillText(label,G.W/2,G.H-70);ctx.restore();break;}}const nearCorpse=G.enemies.find(e=>e.state==="DEAD"&&e.extractable&&!e.extracted&&Math.hypot(e.x-p.x,e.y-p.y)<70);const nearBoss=G.boss&&G.boss.state==="DEAD"&&G.boss.extractable&&!G.boss.extracted&&Math.hypot(G.boss.x-p.x,G.boss.y-p.y)<85;if(nearCorpse||nearBoss){ctx.save();ctx.font="bold 12px 'Rajdhani',sans-serif";ctx.textAlign="center";ctx.fillStyle="#aa66ff";ctx.shadowBlur=8;ctx.shadowColor="#7733cc";ctx.fillText("PRESS Q TO EXTRACT SHADOW",G.W/2,G.H-50);ctx.restore();}}
 function drawDungeonOverlay(G){if(G.mode!=="DUNGEON")return;const ctx=G.ctx,d=G.dungeon,rc=CONFIG.rankColors[d.rank]||CONFIG.rankColors["E"];ctx.save();ctx.font="bold 10px 'Share Tech Mono',monospace";ctx.textAlign="center";ctx.fillStyle=rc.text;ctx.shadowBlur=8;ctx.shadowColor=rc.glow;const wl=d.cleared?"CLEARED":d.waveActive?(d.wave===3?"WAVE 3 — BOSS":`WAVE ${d.wave}`):"PREPARING...";ctx.fillText(`${d.rank}-RANK GATE  ·  ${wl}`,G.W/2,62);ctx.restore();}
 function drawShadows(G){const ctx=G.ctx;for(const sh of G.shadows){if(!sh.active)continue;ctx.save();ctx.beginPath();ctx.arc(sh.x,sh.y+3,sh.r*.7,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.4)";ctx.filter="blur(3px)";ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(sh.x,sh.y,sh.r,0,Math.PI*2);ctx.fillStyle="#1a0033";ctx.shadowBlur=20;ctx.shadowColor="#6622cc";ctx.fill();ctx.restore();ctx.save();ctx.font="13px serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("💀",sh.x,sh.y);ctx.restore();const bw=28,pct=sh.hp/sh.maxHp,bx=sh.x-bw/2,by=sh.y-sh.r-8;ctx.fillStyle="#1a0033";ctx.fillRect(bx,by,bw,3);ctx.fillStyle="#aa66ff";ctx.fillRect(bx,by,bw*pct,3);}}
-function drawPlayer(G){const p=G.player,ctx=G.ctx;if(p.atkFlash>0){const t=p.atkFlash/120;ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,p.atkRange,0,Math.PI*2);ctx.strokeStyle=`rgba(123,53,255,${.4*t})`;ctx.lineWidth=1.5;ctx.stroke();ctx.restore();}
+function drawPlayer(G){const p=G.player,ctx=G.ctx;
+  // Build aura (drawn first, behind player)
+  drawBuildAura(G);
+  if(p.atkFlash>0){const t=p.atkFlash/120;ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,p.atkRange,0,Math.PI*2);ctx.strokeStyle=`rgba(123,53,255,${.4*t})`;ctx.lineWidth=1.5;ctx.stroke();ctx.restore();}
 // equip golden flash
 if(G.effects.equipFlash>0){const t=G.effects.equipFlash/400;ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,p.r+12,0,Math.PI*2);ctx.strokeStyle=`rgba(255,215,0,${t*.9})`;ctx.lineWidth=3+t*4;ctx.shadowBlur=20*t;ctx.shadowColor="#ffd700";ctx.stroke();ctx.restore();}
 ctx.save();ctx.beginPath();ctx.arc(p.x,p.y+4,p.r*.8,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.4)";ctx.filter="blur(4px)";ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle="#7b35ff";ctx.shadowBlur=22;ctx.shadowColor="#5a1fff";ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(p.x-3,p.y-3,p.r*.45,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,0.18)";ctx.fill();ctx.restore();ctx.beginPath();ctx.arc(p.x+p.facing*11,p.y-2,3,0,Math.PI*2);ctx.fillStyle="#ffffff";ctx.fill();}
@@ -1767,7 +2316,7 @@ function updateHUD(G){
   const wl=document.getElementById("waveLabel");
   if(G.mode==="DUNGEON"&&G.dungeon.waveActive)wl.textContent=G.dungeon.wave===3?"BOSS WAVE":`WAVE ${G.dungeon.wave}/3`;
   else wl.textContent="";
-  document.getElementById("cpDisplay").textContent=`CP: ${calcCP(G).toLocaleString()}`;
+  const cpEl=document.getElementById("cpDisplay");if(cpEl)cpEl.textContent=`CP: ${calcCP(G).toLocaleString()}`;
   document.getElementById("keyCount").textContent=p.gateKeys;
   document.getElementById("goldCount").textContent=G.inventory.gold.toLocaleString();
   document.getElementById("shadowCount").textContent=G.shadows.length;
@@ -1861,6 +2410,16 @@ function showTooltip(G,item,e){
   document.getElementById("tt-score").textContent=item.score?`Item Score: ${item.score}`:"";
   const effEl=document.getElementById("tt-effects");effEl.innerHTML="";
   (item.effects||[]).forEach(ef=>{const d=document.createElement("div");d.className="tt-effect";d.textContent=`✦ ${ef}`;effEl.appendChild(d);});
+  // Affixes
+  if(item.affixes&&item.affixes.length){
+    const axDiv=document.createElement("div");axDiv.style.cssText="margin-top:4px;";
+    item.affixes.forEach(ax=>{
+      const def=AFFIX_DEFS[ax];
+      const d=document.createElement("div");d.style.cssText="font-size:8px;color:#00ddff;font-family:'Share Tech Mono',monospace;margin-top:1px";
+      d.textContent=`◈ ${def?def.label:ax}`;axDiv.appendChild(d);
+    });
+    effEl.appendChild(axDiv);
+  }
 
   const ctrl=document.getElementById("tt-controls");
   if(item.slot)ctrl.innerHTML="<b>Left-click</b> to equip &nbsp;·&nbsp; <b>Right-click</b> to discard";
@@ -2039,7 +2598,19 @@ function openStats(G){
   closeAllPanels();
   const p=G.player;
   const cp=calcCP(G);
+  detectBuild(G);
+  const def=G.buildDef||BUILD_DEFS.NONE;
   const grid=document.getElementById("statsGrid");grid.innerHTML="";
+
+  // Build identity card (full width at top)
+  const buildCard=document.createElement("div");
+  buildCard.style.cssText="grid-column:1/-1;background:rgba(8,5,24,.92);border:1px solid "+def.color+"66;border-radius:8px;padding:12px 16px;margin-bottom:4px";
+  const tags=G.buildTags||{};
+  const milestones=Object.entries(G._unlockedMilestones||{}).filter(([,v])=>v).map(([k])=>k);
+  const tagBars=Object.entries(tags).map(([k,v])=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div style="font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace;width:46px">${k.toUpperCase()}</div><div style="flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden"><div style="height:100%;width:${Math.min(100,v)}%;background:${def.color};border-radius:2px"></div></div><div style="font-size:8px;color:${def.color};font-family:'Share Tech Mono',monospace;width:22px">${v}</div></div>`).join("");
+  buildCard.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:22px">${def.icon}</div><div><div style="font-weight:700;font-size:14px;color:${def.color};text-shadow:0 0 10px ${def.color}">${def.label}</div><div style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:2px">${def.desc}</div></div></div>${tagBars}${milestones.length?`<div style="margin-top:6px;font-size:8px;color:${def.color};font-family:'Share Tech Mono',monospace">✦ UNLOCKED: ${milestones.join(" · ")}</div>`:""}`;
+  grid.appendChild(buildCard);
+
   const rows=[["Rank",`${CONFIG.ranks[p.rankIdx]}-Rank`],["Level",p.level],["HP",`${Math.ceil(p.hp)}/${p.maxHp}`],["MP",`${Math.floor(p.mp)}/${p.maxMp}`],["ATK",p.atkDamage],["Range",Math.round(p.atkRange)],["Speed",p.speed.toFixed(2)],["Defense",p.defense],["CRIT",(((.15+(p.critBonus||0))*100).toFixed(1))+"%"],["Combat Power",cp],["Kills",G.stats.kills],["Bosses",G.stats.bossKills],["Dungeons",G.stats.dungeonsCleared],["Extracted",G.stats.shadowsExtracted]];
   rows.forEach(([lbl,val])=>{const c=document.createElement("div");c.style.cssText="background:rgba(8,5,24,.88);border:1px solid rgba(123,53,255,.18);border-radius:5px;padding:9px 13px";c.innerHTML=`<div style="font-size:9px;letter-spacing:.15em;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:3px">${lbl}</div><div style="font-size:18px;font-weight:700;color:${lbl==="Combat Power"?"#ffd700":"#eeeeff"}">${val}</div>`;grid.appendChild(c);});
   document.getElementById("allocPts").textContent=p.statPoints;
@@ -2054,7 +2625,22 @@ function openStats(G){
 }
 
 function flashLevelUp(msg){const el=document.getElementById("levelFlash");el.textContent=msg;el.style.transition="none";el.style.opacity="1";el.style.transform="translate(-50%,-50%) scale(1.1)";setTimeout(()=>{el.style.transition="opacity 0.8s ease,transform 0.8s ease";el.style.opacity="0";el.style.transform="translate(-50%,-60%) scale(1)";},50);}
-function showDeadScreen(G,v){const el=document.getElementById("deadScreen");el.classList.toggle("visible",v);if(v)document.getElementById("deadStats").innerHTML=`Lv ${G.player.level} · ${CONFIG.ranks[G.player.rankIdx]}-Rank<br>Kills: ${G.stats.kills} &nbsp;·&nbsp; Bosses: ${G.stats.bossKills}<br>Dungeons: ${G.stats.dungeonsCleared} &nbsp;·&nbsp; Shadows: ${G.stats.shadowsExtracted}`;}
+function showDeadScreen(G,v){
+  const el=document.getElementById("deadScreen");el.classList.toggle("visible",v);
+  if(v&&!G._deathPenaltyApplied){
+    G._deathPenaltyApplied=true;
+    const penaltyRate=G.prestige?.passives?.death_proof?0.05:0.15;
+      const lost=Math.floor(G.inventory.gold*penaltyRate);
+    G.inventory.gold=Math.max(0,G.inventory.gold-lost);
+    const tokens=Math.floor(G.player.level*2+G.stats.kills*.1+G.stats.bossKills*5);
+    if(!G.prestige)G.prestige={tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0};
+    G.prestige.tokens+=tokens;G.prestige.totalRuns++;
+    G.prestige.bestKills=Math.max(G.prestige.bestKills,G.stats.kills);
+    G.prestige.bestLevel=Math.max(G.prestige.bestLevel,G.player.level);
+    autoSave(G);
+    document.getElementById("deadStats").innerHTML=`Lv ${G.player.level} · ${CONFIG.ranks[G.player.rankIdx]}-Rank<br>Kills: ${G.stats.kills} &nbsp;·&nbsp; Bosses: ${G.stats.bossKills}<br>Dungeons: ${G.stats.dungeonsCleared} &nbsp;·&nbsp; Shadows: ${G.stats.shadowsExtracted}<br><span style="color:#ff6680">Gold lost: ${lost.toLocaleString()}G (−15%)</span><br><span style="color:#aa66ff">✦ Shadow Tokens earned: +${tokens}</span>`;
+  }else if(!v){G._deathPenaltyApplied=false;}
+}
 
 function gameLoop(G,ts){
   const dt=Math.min(ts-G.lastTime,50);G.lastTime=ts;
@@ -2068,7 +2654,10 @@ function gameLoop(G,ts){
     updateNotifications(G,dt);updateShadows(G,dt);
     Combo.tick(dt);KillStreak.tick(dt);
     LootBeams.update(dt);XPOrbs.update(dt,G.player.x,G.player.y);
-    if(G.mode==="OPEN_WORLD")updateOpenWorldEnemies(G,dt);
+    // Build system — re-evaluate every 2s
+    G._buildTimer=(G._buildTimer||0)+dt;
+    if(G._buildTimer>2000){G._buildTimer=0;detectBuild(G);renderBuildHUD(G);}
+    updateQuests(G);if(G.mode==="OPEN_WORLD")updateOpenWorldEnemies(G,dt);
     else if(G.mode==="DUNGEON")updateDungeon(G,dt);
   }
   applyShake(G.canvas);
@@ -2079,6 +2668,300 @@ function gameLoop(G,ts){
   requestAnimationFrame(ts=>gameLoop(G,ts));
 }
 function resize(G){G.W=window.innerWidth;G.H=window.innerHeight;G.canvas.width=G.W;G.canvas.height=G.H;}
+
+
+/* ============================================================
+   PRESTIGE SYSTEM — Shadow Tokens, meta passives
+   ============================================================ */
+const PRESTIGE_PASSIVES=[
+  {id:"hunter_born",name:"Hunter's Blood",desc:"+15% max HP permanently",cost:5,icon:"❤",apply:(p)=>{p.maxHp=Math.round(p.maxHp*1.15);p.hp=Math.min(p.hp+30,p.maxHp);}},
+  {id:"shadow_instinct",name:"Shadow Instinct",desc:"+0.4 base speed permanently",cost:4,icon:"💨",apply:(p)=>{p.speed+=0.4;}},
+  {id:"iron_will",name:"Iron Will",desc:"+8 base ATK permanently",cost:4,icon:"⚔",apply:(p)=>{p.atkDamage+=8;}},
+  {id:"arcane_mind",name:"Arcane Mind",desc:"+25 max MP permanently",cost:3,icon:"💙",apply:(p)=>{p.maxMp+=25;p.mp=Math.min(p.mp+25,p.maxMp);}},
+  {id:"key_hoard",name:"Key Hoarder",desc:"Start each run with 5 Gate Keys",cost:6,icon:"🗝",apply:()=>{}},
+  {id:"gold_sense",name:"Gold Sense",desc:"+25% gold from all sources",cost:5,icon:"💰",apply:()=>{}},
+  {id:"shadow_affinity",name:"Shadow Affinity",desc:"+1 shadow army slot permanently",cost:7,icon:"👥",apply:(p,G)=>{G.shadowLimit++;}},
+  {id:"death_proof",name:"Death's Proof",desc:"Death penalty reduced to 5% gold",cost:8,icon:"💀",apply:()=>{}},
+  {id:"xp_hunger",name:"XP Hunger",desc:"+30% XP from all kills",cost:5,icon:"⬆",apply:()=>{}},
+];
+
+function initPrestige(G){
+  if(!G.prestige)G.prestige={tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0};
+  // Apply all purchased passives
+  for(const pa of PRESTIGE_PASSIVES){
+    if(G.prestige.passives[pa.id]){
+      try{pa.apply(G.player,G);}catch(e){}
+    }
+  }
+  // Key hoarder: start with 5 keys
+  if(G.prestige.passives["key_hoard"])G.player.gateKeys=Math.max(G.player.gateKeys,5);
+}
+
+function buyPrestigePasive(G,pa){
+  if(!G.prestige)G.prestige={tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0};
+  if(G.prestige.passives[pa.id]){notify(G,"Already purchased","#ff6680");return false;}
+  if(G.prestige.tokens<pa.cost){notify(G,"Not enough Shadow Tokens","#ff6680");return false;}
+  G.prestige.tokens-=pa.cost;
+  G.prestige.passives[pa.id]=true;
+  pa.apply(G.player,G);
+  notify(G,`✦ ${pa.name} unlocked!`,"#aa66ff",2500);
+  AudioEngine.play("levelup",.5);flashScreen("#aa66ff",.25,400);
+  autoSave(G);
+  return true;
+}
+
+function openPrestige(G){
+  closeAllPanels();
+  let ov=document.getElementById("prestigeOverlay");
+  if(!ov){
+    ov=document.createElement("div");ov.id="prestigeOverlay";ov.className="overlay";
+    ov.innerHTML=`<div class="ov-hdr"><div class="ov-title">✦ Shadow Archive</div><button class="ov-close" id="closePrestige">✕</button></div><div id="prestigeContent" style="width:100%;max-width:700px"></div>`;
+    document.body.appendChild(ov);
+    document.getElementById("closePrestige").addEventListener("click",()=>ov.classList.remove("visible"));
+  }
+  const p=G.prestige||{tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0};
+  const content=document.getElementById("prestigeContent");
+  content.innerHTML=`
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+      <div style="background:rgba(170,102,255,.08);border:1px solid rgba(170,102,255,.3);border-radius:8px;padding:10px 16px;min-width:140px">
+        <div style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace;letter-spacing:2px">SHADOW TOKENS</div>
+        <div style="font-size:28px;font-weight:700;color:#aa66ff;text-shadow:0 0 12px #aa66ff">${p.tokens}</div>
+      </div>
+      <div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.2);border-radius:8px;padding:10px 16px">
+        <div style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace;letter-spacing:2px">LIFETIME STATS</div>
+        <div style="font-size:10px;color:var(--text);font-family:'Share Tech Mono',monospace;line-height:1.9;margin-top:4px">
+          Runs: ${p.totalRuns||0}<br>Best Level: ${p.bestLevel||0}<br>Best Kills: ${p.bestKills||0}
+        </div>
+      </div>
+      <div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 16px;flex:1">
+        <div style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:6px">Tokens earned on death or reset based on level, kills, and boss kills.<br>Passives persist across ALL runs.</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px">
+      ${PRESTIGE_PASSIVES.map(pa=>{
+        const owned=p.passives[pa.id];
+        return `<div style="background:rgba(8,5,24,.92);border:1px solid ${owned?"rgba(170,102,255,.6)":"rgba(170,102,255,.2)"};border-radius:8px;padding:11px 14px;${owned?"box-shadow:0 0 12px rgba(170,102,255,.15)":""}">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+            <span style="font-size:20px">${pa.icon}</span>
+            <div>
+              <div style="font-weight:700;font-size:12px;color:${owned?"#cc88ff":"#eeeeff"}">${pa.name}</div>
+              <div style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace">${pa.desc}</div>
+            </div>
+          </div>
+          ${owned?
+            `<div style="font-size:9px;color:#44ff88;font-family:'Share Tech Mono',monospace">✓ ACTIVE</div>`:
+            `<button onclick="if(window._G)buyPrestigePasive(window._G,PRESTIGE_PASSIVES.find(p=>p.id==='${pa.id}'))&&openPrestige(window._G)" style="cursor:pointer;background:rgba(170,102,255,.1);border:1px solid rgba(170,102,255,.4);color:#cc88ff;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:3px;min-height:34px">⬡ ${pa.cost} Tokens</button>`
+          }
+        </div>`;
+      }).join("")}
+    </div>
+  `;
+  ov.classList.add("visible");
+}
+
+/* ============================================================
+   QUEST SYSTEM — 3 daily quests with rewards
+   ============================================================ */
+const QUEST_POOL=[
+  {id:"kills10",name:"Hunter's Warmup",desc:"Kill 10 enemies",icon:"⚔",goal:10,type:"kills",reward:{gold:300,tokens:1}},
+  {id:"kills30",name:"Slaughter",desc:"Kill 30 enemies",icon:"💀",goal:30,type:"kills",reward:{gold:800,tokens:2}},
+  {id:"boss1",name:"Boss Hunter",desc:"Defeat 1 dungeon boss",icon:"🐉",goal:1,type:"bossKills",reward:{gold:1000,tokens:4}},
+  {id:"dungeon1",name:"Gate Raider",desc:"Clear 1 dungeon",icon:"⬡",goal:1,type:"dungeonsCleared",reward:{gold:600,tokens:2}},
+  {id:"dungeon3",name:"Gate Breaker",desc:"Clear 3 dungeons",icon:"🌀",goal:3,type:"dungeonsCleared",reward:{gold:1800,tokens:6}},
+  {id:"extract3",name:"Shadow Collector",desc:"Extract 3 shadows",icon:"👥",goal:3,type:"shadowsExtracted",reward:{gold:700,tokens:3}},
+  {id:"combo20",name:"Combo Artist",desc:"Reach a 20-hit combo",icon:"⚡",goal:20,type:"maxCombo",reward:{gold:500,tokens:2}},
+  {id:"gold2000",name:"Wealth Hunter",desc:"Earn 2000 gold in one session",icon:"💰",goal:2000,type:"goldEarned",reward:{gold:600,tokens:2}},
+  {id:"loot5",name:"Loot Goblin",desc:"Collect 5 items",icon:"🎒",goal:5,type:"itemsCollected",reward:{gold:400,tokens:1}},
+  {id:"b_rank",name:"B-Rank Conquest",desc:"Clear a B-rank or higher gate",icon:"🔥",goal:1,type:"bRankClear",reward:{gold:2000,tokens:5}},
+];
+
+function initQuests(G){
+  const now=Date.now();
+  const dayMs=86400000;
+  const dayKey=Math.floor(now/dayMs);
+  if(!G.questLastRefresh||Math.floor(G.questLastRefresh/dayMs)<dayKey){
+    // New day — pick 3 random quests
+    const pool=[...QUEST_POOL];const picked=[];
+    while(picked.length<3&&pool.length){const idx=Math.floor(Math.random()*pool.length);picked.push({...pool[idx],progress:0,completed:false,claimed:false});pool.splice(idx,1);}
+    G.quests=picked;G.questLastRefresh=now;
+    autoSave(G);
+  }
+  if(!G.quests||!G.quests.length){
+    G.quests=QUEST_POOL.slice(0,3).map(q=>({...q,progress:0,completed:false,claimed:false}));
+  }
+  // Track extra quest stats
+  G._questStats=G._questStats||{maxCombo:0,goldEarned:0,itemsCollected:0,bRankClear:0};
+}
+
+function updateQuests(G){
+  if(!G.quests||!G._questStats)return;
+  for(const q of G.quests){
+    if(q.completed)continue;
+    let prog=0;
+    if(q.type==="kills")prog=G.stats.kills;
+    else if(q.type==="bossKills")prog=G.stats.bossKills;
+    else if(q.type==="dungeonsCleared")prog=G.stats.dungeonsCleared;
+    else if(q.type==="shadowsExtracted")prog=G.stats.shadowsExtracted;
+    else if(q.type==="maxCombo")prog=G._questStats.maxCombo;
+    else if(q.type==="goldEarned")prog=G._questStats.goldEarned;
+    else if(q.type==="itemsCollected")prog=G._questStats.itemsCollected;
+    else if(q.type==="bRankClear")prog=G._questStats.bRankClear;
+    q.progress=prog;
+    if(!q.completed&&prog>=q.goal){q.completed=true;notify(G,`✦ QUEST COMPLETE: ${q.name}!`,"#ffd700",3000);AudioEngine.play("levelup",.6);flashScreen("#ffd700",.25,600);}
+  }
+}
+
+function claimQuestReward(G,quest){
+  if(!quest.completed||quest.claimed)return;
+  quest.claimed=true;
+  G.inventory.gold+=quest.reward.gold;
+  if(!G.prestige)G.prestige={tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0};
+  G.prestige.tokens+=quest.reward.tokens||0;
+  notify(G,`💰 +${quest.reward.gold}G · ✦ +${quest.reward.tokens} Tokens`,"#ffd700",2500);
+  AudioEngine.play("loot",.5);autoSave(G);
+  openQuests(G);
+}
+
+function openQuests(G){
+  closeAllPanels();
+  let ov=document.getElementById("questOverlay");
+  if(!ov){
+    ov=document.createElement("div");ov.id="questOverlay";ov.className="overlay";
+    ov.innerHTML=`<div class="ov-hdr"><div class="ov-title">📋 Quests</div><button class="ov-close" id="closeQuest">✕</button></div><div id="questContent" style="width:100%;max-width:700px"></div>`;
+    document.body.appendChild(ov);
+    document.getElementById("closeQuest").addEventListener("click",()=>ov.classList.remove("visible"));
+  }
+  const content=document.getElementById("questContent");
+  const tomorrow=new Date();tomorrow.setHours(24,0,0,0);
+  const msLeft=tomorrow-Date.now();
+  const hrs=Math.floor(msLeft/3600000),mins=Math.floor((msLeft%3600000)/60000);
+  content.innerHTML=`
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);margin-bottom:12px">DAILY QUESTS — Resets in ${hrs}h ${mins}m</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${(G.quests||[]).map((q,qi)=>{
+        const pct=Math.min(1,q.progress/q.goal);
+        const clr=q.completed?"#44ff88":q.claimed?"#666":"#ffd700";
+        return `<div style="background:rgba(8,5,24,.92);border:1px solid ${q.completed?"rgba(68,255,136,.4)":"rgba(255,215,0,.15)"};border-radius:8px;padding:14px 16px">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="font-size:24px">${q.icon}</span>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:14px;color:${clr}">${q.name}${q.claimed?" ✓":""}</div>
+              <div style="font-size:10px;color:var(--dim);margin:2px 0 6px">${q.desc}</div>
+              <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:4px">
+                <div style="height:100%;width:${pct*100}%;background:${q.completed?"#44ff88":"#ffd700"};border-radius:3px;transition:width .3s"></div>
+              </div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim)">${Math.min(q.progress,q.goal)}/${q.goal} &nbsp;·&nbsp; Reward: 💰${q.reward.gold}G · ✦${q.reward.tokens} Tokens</div>
+            </div>
+            ${q.completed&&!q.claimed?
+              `<button onclick="if(window._G){claimQuestReward(window._G,window._G.quests[${qi}])}" style="cursor:pointer;background:rgba(68,255,136,.1);border:1px solid rgba(68,255,136,.4);color:#44ff88;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;padding:8px 14px;border-radius:4px;min-height:40px;white-space:nowrap">CLAIM</button>`:
+              q.claimed?`<div style="font-size:9px;color:#44ff88;font-family:'Share Tech Mono',monospace;padding-top:4px">CLAIMED</div>`:""}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+    <div style="margin-top:14px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim)">💡 Quest progress carries across dungeon runs. New quests every 24 hours.</div>
+  `;
+  ov.classList.add("visible");
+}
+
+/* ============================================================
+   SKILL UPGRADE TREE — each ability has upgrade paths
+   ============================================================ */
+const SKILL_UPGRADES={
+  mutilation:[
+    {id:"mut_speed",name:"Blade Tempo",desc:"Adds a 4th hit to the flurry",cost:400,icon:"⚡",apply:(G)=>{G._skillUpgrades=G._skillUpgrades||{};G._skillUpgrades.mut_extraHit=true;}},
+    {id:"mut_lifesteal",name:"Vampire Edge",desc:"Each hit restores 3 HP",cost:600,icon:"🩸",apply:(G)=>{G._skillUpgrades.mut_lifesteal=true;}},
+    {id:"mut_aoe",name:"Rending Strike",desc:"+30% AoE range on Mutilation",cost:800,icon:"🌀",apply:(G)=>{G._skillUpgrades.mut_aoe=true;}},
+  ],
+  stealth:[
+    {id:"sth_crit",name:"Assassin's Mark",desc:"Stealth Strike always crits (already does) + applies 3s bleed",cost:350,icon:"🗡",apply:(G)=>{G._skillUpgrades.sth_bleed=true;}},
+    {id:"sth_cd",name:"Shadow Step",desc:"Stealth Strike CD reduced to 3s",cost:500,icon:"🌑",apply:(G)=>{G.abilities.stealth&&(G.abilities.stealth.maxCd=3000);}},
+    {id:"sth_clone",name:"Phantom Image",desc:"Stealth Strike leaves a shadow clone for 4s",cost:900,icon:"👥",apply:(G)=>{G._skillUpgrades.sth_clone=true;}},
+  ],
+  authority:[
+    {id:"aut_range",name:"Extended Pull",desc:"+50 Pull range",cost:350,icon:"✋",apply:(G)=>{G._skillUpgrades.aut_range=true;}},
+    {id:"aut_stun",name:"Iron Authority",desc:"Stun duration increased to 2.5s",cost:500,icon:"🔒",apply:(G)=>{G._skillUpgrades.aut_longstun=true;}},
+    {id:"aut_dmg",name:"Crushing Pull",desc:"Pull now deals 1.5× damage",cost:700,icon:"💥",apply:(G)=>{G._skillUpgrades.aut_dmgboost=true;}},
+  ],
+  domain:[
+    {id:"dom_size",name:"Expanded Domain",desc:"+40% Domain AoE radius",cost:600,icon:"👑",apply:(G)=>{G._skillUpgrades.dom_size=true;}},
+    {id:"dom_shadows",name:"Monarch's Call",desc:"Domain summons a temporary shadow for 6s",cost:1000,icon:"💀",apply:(G)=>{G._skillUpgrades.dom_summon=true;}},
+    {id:"dom_cd",name:"Eternal Reign",desc:"Domain CD reduced to 8s",cost:1200,icon:"🌀",apply:(G)=>{G.abilities.domain&&(G.abilities.domain.maxCd=8000);}},
+  ],
+};
+
+function openSkillTree(G){
+  closeAllPanels();
+  let ov=document.getElementById("skillOverlay");
+  if(!ov){
+    ov=document.createElement("div");ov.id="skillOverlay";ov.className="overlay";
+    ov.innerHTML=`<div class="ov-hdr"><div class="ov-title">🔮 Skill Tree</div><button class="ov-close" id="closeSkill">✕</button></div><div id="skillContent" style="width:100%;max-width:700px"></div>`;
+    document.body.appendChild(ov);
+    document.getElementById("closeSkill").addEventListener("click",()=>ov.classList.remove("visible"));
+  }
+  const su=G._skillUpgrades||{};
+  const content=document.getElementById("skillContent");
+  content.innerHTML=`
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);margin-bottom:12px">💰 Gold: ${G.inventory.gold.toLocaleString()}G &nbsp;·&nbsp; Upgrades persist until death</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+      ${ABILITIES.map(ab=>{
+        const ups=SKILL_UPGRADES[ab.id]||[];
+        return `<div style="background:rgba(8,5,24,.92);border:1px solid rgba(123,53,255,.25);border-radius:8px;padding:12px">
+          <div style="font-size:14px;font-weight:700;color:#eeeeff;margin-bottom:8px">${ab.icon} ${ab.name}</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${ups.map(up=>{
+              const owned=su[up.id];
+              return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,.03);border:1px solid ${owned?"rgba(68,255,136,.35)":"rgba(255,255,255,.08)"};border-radius:5px">
+                <span style="font-size:16px">${up.icon}</span>
+                <div style="flex:1">
+                  <div style="font-size:11px;font-weight:700;color:${owned?"#44ff88":"#eeeeff"}">${up.name}</div>
+                  <div style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace">${up.desc}</div>
+                </div>
+                ${owned?
+                  `<div style="font-size:9px;color:#44ff88;font-family:'Share Tech Mono',monospace">ACTIVE</div>`:
+                  `<button onclick="if(window._G)buySkillUpgrade(window._G,'${ab.id}','${up.id}')" style="cursor:pointer;background:rgba(123,53,255,.1);border:1px solid rgba(123,53,255,.4);color:#aa66ff;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:3px;min-height:32px;white-space:nowrap">${up.cost}G</button>`
+                }
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+  `;
+  ov.classList.add("visible");
+}
+
+function buySkillUpgrade(G,abilityId,upgradeId){
+  const ups=SKILL_UPGRADES[abilityId]||[];
+  const up=ups.find(u=>u.id===upgradeId);
+  if(!up)return;
+  if(!G._skillUpgrades)G._skillUpgrades={};
+  if(G._skillUpgrades[upgradeId]){notify(G,"Already purchased","#ff6680");return;}
+  if(G.inventory.gold<up.cost){notify(G,"Not enough gold","#ff6680");return;}
+  G.inventory.gold-=up.cost;
+  G._skillUpgrades[upgradeId]=true;
+  up.apply(G);
+  notify(G,`🔮 ${up.name} unlocked!`,"#aa66ff",2500);
+  AudioEngine.play("levelup",.5);
+  autoSave(G);
+  openSkillTree(G);
+}
+
+/* ============================================================
+   DUNGEON VISUAL PALETTES per rank
+   ============================================================ */
+const DUNGEON_PALETTES={
+  E:{bg:"#03030f",grid:"rgba(123,53,255,0.05)",accent:"#7b35ff"},
+  D:{bg:"#001a08",grid:"rgba(40,180,80,0.06)",accent:"#22cc55"},
+  C:{bg:"#001020",grid:"rgba(40,100,220,0.06)",accent:"#2266ff"},
+  B:{bg:"#1a0800",grid:"rgba(200,80,0,0.07)",accent:"#cc5500"},
+  A:{bg:"#0d0000",grid:"rgba(200,20,20,0.08)",accent:"#cc1111"},
+  S:{bg:"#0d0012",grid:"rgba(200,0,200,0.08)",accent:"#cc00cc"},
+};
+
+/* ============================================================
+   ENHANCED BOSS: fires projectile bursts in phase 2+
+   ============================================================ */
 
 (function boot(){
   const canvas=document.getElementById("gameCanvas");const ctx=canvas.getContext("2d");
@@ -2098,17 +2981,16 @@ function resize(G){G.W=window.innerWidth;G.H=window.innerHeight;G.canvas.width=G
 
   // Load save
   const loaded=loadSave(G);
-  initDailyMod(G);
+  initDailyMod(G);initPrestige(G);initQuests(G);
   if(loaded){
     notify(G,`Welcome back, ${CONFIG.ranks[G.player.rankIdx]}-Rank Hunter!`,"#aaccff",3500);
   } else {
-    for(let i=0;i<5;i++)spawnEnemy(G);
     notify(G,"SYSTEM: Hunter has awakened.","#aaccff",3000);
     notify(G,"Tap 🎒 BAG to equip gear · 📊 STATS to allocate points","#888",4500);
   }
-  if(!loaded)for(let i=0;i<5;i++)spawnEnemy(G);
-  else for(let i=0;i<5;i++)spawnEnemy(G);
+  for(let i=0;i<5;i++)spawnEnemy(G);
 
+  window._G=G; // expose for inline onclick handlers
   document.getElementById("btnBag").addEventListener("click",()=>openBag(G));
   document.getElementById("btnEq").addEventListener("click",()=>openEquipment(G));
   document.getElementById("btnShop").addEventListener("click",()=>openShop(G));
@@ -2116,20 +2998,243 @@ function resize(G){G.W=window.innerWidth;G.H=window.innerHeight;G.canvas.width=G
   document.getElementById("btnStats").addEventListener("click",()=>openStats(G));
 
   document.getElementById("closeBag").addEventListener("click",()=>document.getElementById("bagOverlay").classList.remove("visible"));
+  document.getElementById("btnSkill").addEventListener("click",()=>openSkillTree(G));
+  document.getElementById("btnQuest").addEventListener("click",()=>openQuests(G));
+  document.getElementById("btnPrestige").addEventListener("click",()=>openPrestige(G));
   document.getElementById("closeEq").addEventListener("click",()=>document.getElementById("eqOverlay").classList.remove("visible"));
   document.getElementById("closeShop").addEventListener("click",()=>document.getElementById("shopOverlay").classList.remove("visible"));
   document.getElementById("closeArmy").addEventListener("click",()=>document.getElementById("armyOverlay").classList.remove("visible"));
   document.getElementById("closeStats").addEventListener("click",()=>document.getElementById("statsOverlay").classList.remove("visible"));
 
   document.getElementById("btnRestart").addEventListener("click",()=>{
+    // Preserve prestige across runs, clear combat state
+    const savedPrestige=G.prestige?JSON.parse(JSON.stringify(G.prestige)):{tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0};
+    const savedQuests=G.quests?(G.quests.map(q=>({...q}))):[]; 
+    const savedQuestRefresh=G.questLastRefresh||0;
     clearSave();
-    resetGameState(G);showDeadScreen(G,false);
+    resetGameState(G);
+    G.prestige=savedPrestige;
+    G.quests=savedQuests;
+    G.questLastRefresh=savedQuestRefresh;
+    initPrestige(G);// re-apply passives to fresh player
+    showDeadScreen(G,false);
     for(let i=0;i<5;i++)spawnEnemy(G);
     G.portalSpawnTimer=-8000;
     notify(G,"SYSTEM: Hunter has awakened.","#aaccff",3000);
+    if(savedPrestige.tokens>0)notify(G,`✦ ${savedPrestige.tokens} Shadow Tokens available in Archive`,"#aa66ff",4000);
   });
 
   requestAnimationFrame(ts=>{G.lastTime=ts;gameLoop(G,ts);});
+})();
+</script>
+<script>
+/* ============================================================
+   PWA ENGINE — Manifest, Service Worker, Install Prompt
+   ============================================================ */
+(function initPWA(){
+
+  /* ── 1. INLINE MANIFEST via Blob URL ── */
+  const manifest={
+    name:"Solo Leveling: Rebuild",
+    short_name:"SL:Rebuild",
+    description:"Become the Shadow Monarch. Kill, extract, level up.",
+    start_url:"./",
+    display:"fullscreen",
+    orientation:"any",
+    background_color:"#03030f",
+    theme_color:"#03030f",
+    categories:["games","entertainment"],
+    icons:[
+      // We generate SVG icons as data URIs — no external files needed
+      {
+        src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%2303030f'/%3E%3Ccircle cx='256' cy='256' r='160' fill='%237b35ff' opacity='.18'/%3E%3Ccircle cx='256' cy='256' r='80' fill='%237b35ff' opacity='.35'/%3E%3Ctext x='256' y='320' text-anchor='middle' font-size='200' font-family='serif'%3E%E2%9A%94%3C/text%3E%3C/svg%3E",
+        sizes:"512x512",
+        type:"image/svg+xml",
+        purpose:"any maskable"
+      },
+      {
+        src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='28' fill='%2303030f'/%3E%3Ctext x='96' y='130' text-anchor='middle' font-size='100' font-family='serif'%3E%E2%9A%94%3C/text%3E%3C/svg%3E",
+        sizes:"192x192",
+        type:"image/svg+xml",
+        purpose:"any maskable"
+      }
+    ],
+    screenshots:[],
+    shortcuts:[
+      {
+        name:"Continue Hunt",
+        short_name:"Play",
+        description:"Jump back into your last session",
+        url:"./"
+      }
+    ]
+  };
+
+  try{
+    const blob=new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"});
+    const url=URL.createObjectURL(blob);
+    document.getElementById("pwaManifest").href=url;
+  }catch(e){console.warn("PWA manifest blob failed:",e);}
+
+  /* ── 2. SERVICE WORKER via inline script tag trick ── */
+  // Blob URLs are blocked for SW in many browsers.
+  // We inject a <script> into a same-origin iframe to register the SW,
+  // OR use the simpler approach: write SW code to a data URL.
+  // Best cross-browser approach: register with a minimal fetch-intercepting SW
+  // using a script element with type=serviceworker if supported,
+  // otherwise skip silently.
+
+  const SW_CACHE="sl-rebuild-v1";
+
+  // Create an actual SW file via a hidden <script> blob hack won't work,
+  // so we use the cleanest fallback: inline SW via a data: URI.
+  // Chrome 93+ supports data: URIs for SW when same-origin restriction is waived via header —
+  // but for maximum compat we register a minimal SW from a separate script tag approach.
+
+  // The only reliable single-file SW technique is to put SW code in a <script> tag
+  // with a special id, then register self.location as the SW with ?sw query param.
+  // We implement this pattern:
+  if("serviceWorker" in navigator){
+    // Check if we're being loaded as a SW (query param trick)
+    if(location.search.includes("__sw")){
+      // This code runs as Service Worker context — won't happen in page context
+    } else {
+      // Register using the page's own URL with a marker
+      // The SW code is embedded in this same HTML file and detected via the marker
+      const swSrc=`
+const CACHE="${SW_CACHE}";
+self.addEventListener("install",e=>{
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE).then(c=>{
+      // Cache the main document
+      return fetch(self.location.href.replace(/[?#].*/,"")).then(r=>c.put("/",r)).catch(()=>{});
+    })
+  );
+});
+self.addEventListener("activate",e=>{
+  e.waitUntil(
+    caches.keys().then(keys=>Promise.all(
+      keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
+    )).then(()=>self.clients.claim())
+  );
+});
+self.addEventListener("fetch",e=>{
+  e.respondWith(
+    fetch(e.request).catch(()=>caches.match(e.request).then(r=>r||new Response("Offline",{status:503})))
+  );
+});
+`;
+      // Use a base64-encoded data URI — supported in Firefox/Chrome for SW
+      // when the page is served over https or localhost
+      try{
+        const b64=btoa(unescape(encodeURIComponent(swSrc)));
+        const swUrl="data:text/javascript;base64,"+b64;
+        navigator.serviceWorker.register(swUrl,{scope:"./"})
+          .then(reg=>{
+            console.log("[PWA] Service worker registered (data URI)");
+            if(window.matchMedia("(display-mode: fullscreen)").matches||
+               window.matchMedia("(display-mode: standalone)").matches||
+               window.navigator.standalone===true){
+              document.getElementById("pwaBadge").classList.add("show");
+            }
+          })
+          .catch(err=>{
+            // data: URI not supported for SW — try same-page registration
+            // This is expected on some browsers; PWA still installs without offline support
+            console.info("[PWA] Offline caching unavailable in this browser context:",err.message);
+          });
+      }catch(e){
+        console.info("[PWA] SW setup skipped:",e.message);
+      }
+    }
+  }
+
+  /* ── 3. INSTALL PROMPT (Android/Chrome/Edge) ── */
+  let _deferredPrompt=null;
+  const banner=document.getElementById("pwaInstallBanner");
+  const installBtn=document.getElementById("pwaInstallBtn");
+  const dismissBtn=document.getElementById("pwaDismissBtn");
+
+  // Check if already installed or dismissed this session
+  const dismissed=sessionStorage.getItem("pwa_dismissed");
+  const isStandalone=window.matchMedia("(display-mode: standalone)").matches||
+                     window.matchMedia("(display-mode: fullscreen)").matches||
+                     window.navigator.standalone===true;
+
+  window.addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault();
+    _deferredPrompt=e;
+    if(!dismissed&&!isStandalone){
+      // Show banner after 8s (let user get into the game first)
+      setTimeout(()=>banner.classList.add("show"),8000);
+    }
+  });
+
+  installBtn.addEventListener("click",async()=>{
+    if(!_deferredPrompt)return;
+    banner.classList.remove("show");
+    _deferredPrompt.prompt();
+    const{outcome}=await _deferredPrompt.userChoice;
+    if(outcome==="accepted"){
+      console.log("[PWA] User accepted install");
+      // Notify game
+      if(window._G)notify(window._G,"📲 Solo Leveling installed!","#7b35ff",4000);
+      document.getElementById("pwaBadge").classList.add("show");
+    }
+    _deferredPrompt=null;
+  });
+
+  dismissBtn.addEventListener("click",()=>{
+    banner.classList.remove("show");
+    sessionStorage.setItem("pwa_dismissed","1");
+  });
+
+  // Hide banner if installed
+  window.addEventListener("appinstalled",()=>{
+    banner.classList.remove("show");
+    document.getElementById("iosInstallHint").classList.remove("show");
+    document.getElementById("pwaBadge").classList.add("show");
+    if(window._G)notify(window._G,"📲 Game installed as app!","#7b35ff",3000);
+  });
+
+  /* ── 4. iOS SAFARI HINT ── */
+  const iosHint=document.getElementById("iosInstallHint");
+  const iosClose=document.getElementById("iosInstallClose");
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const iosDismissed=localStorage.getItem("pwa_ios_dismissed");
+
+  if(isIOS&&isSafari&&!isStandalone&&!iosDismissed){
+    setTimeout(()=>iosHint.classList.add("show"),12000);
+  }
+
+  iosClose.addEventListener("click",()=>{
+    iosHint.classList.remove("show");
+    localStorage.setItem("pwa_ios_dismissed","1");
+  });
+
+  /* ── 5. KEYBOARD SHORTCUT: Ctrl+I to show install ── */
+  document.addEventListener("keydown",e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key==="i"&&!e.shiftKey&&!e.altKey){
+      if(_deferredPrompt){
+        e.preventDefault();
+        banner.classList.add("show");
+      }
+    }
+  });
+
+  /* ── 6. ONLINE/OFFLINE STATUS ── */
+  function updateOnlineStatus(){
+    if(!navigator.onLine&&window._G){
+      notify(window._G,"📡 Offline — game saves locally","#ffaa00",3000);
+    }
+  }
+  window.addEventListener("offline",updateOnlineStatus);
+  window.addEventListener("online",()=>{
+    if(window._G)notify(window._G,"📡 Back online","#44ff88",2000);
+  });
+
 })();
 </script>
 </body>
