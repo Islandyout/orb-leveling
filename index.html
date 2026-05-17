@@ -7,11 +7,15 @@
   <meta name="application-name" content="Solo Leveling: Rebuild"/>
   <meta name="description" content="Become the Shadow Monarch. Kill. Extract. Level up."/>
   <meta name="theme-color" content="#03030f"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="SL:Rebuild"/>
+  <link rel="apple-touch-icon" href="./icon-192.svg"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="SL:Rebuild"/>
-  <link rel="manifest" id="pwaManifest"/>
+  <link rel="manifest" href="./manifest.json"/>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 
   <style>
@@ -230,6 +234,8 @@
   /* ═══════════════════════════════════════════
      LEVEL FLASH
   ═══════════════════════════════════════════ */
+  #xpStrip{position:fixed;top:0;left:0;width:100%;height:3px;z-index:41;pointer-events:none;}
+  #xpStripFill{height:100%;background:linear-gradient(90deg,#5a1fff,#7b35ff,#aa66ff);width:0%;transition:width 0.18s;}
   #levelFlash{
     position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
     font-size:clamp(16px,5vw,28px);font-weight:700;color:var(--gold);
@@ -790,6 +796,11 @@
   #rankCeremony.active #rankCeremonyLabel{opacity:1;transform:translateY(0)}
 
   /* ── PITY BAR — tucked above touch controls on mobile ── */
+  #waveCountdown{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:rgba(110,0,0,0.92);padding:20px 40px;border-radius:16px;color:#fff;
+    font-weight:bold;font-size:54px;display:none;z-index:290;text-align:center;
+    border:2px solid #f44;font-family:'Rajdhani',sans-serif;letter-spacing:8px;pointer-events:none;}
+  #waveCountdown .wcSub{font-size:11px;opacity:0.7;margin-top:5px;letter-spacing:3px;display:block;}
   #pityBar{
     position:fixed;
     /* Sit above the skill pad (which is min(58vmin,290px) tall) */
@@ -860,6 +871,7 @@
 <!-- PWA installed badge -->
 <div id="pwaBadge">📲 APP</div>
 
+<div id="xpStrip"><div id="xpStripFill"></div></div>
 <canvas id="gameCanvas"></canvas>
 <canvas id="lootBeamCanvas"></canvas>
 <canvas id="xpOrbCanvas"></canvas>
@@ -875,6 +887,7 @@
   <div id="rankBigLetter"></div>
   <div id="rankCeremonyLabel"></div>
 </div>
+<div id="waveCountdown"><span id="waveCountNum">3</span><span class="wcSub" id="waveCountSub">INCOMING</span></div>
 <div id="pityBar">
   <div id="pityLabel">✦ MYTHIC PITY</div>
   <div id="pityTrack"><div id="pityFill"></div></div>
@@ -908,6 +921,10 @@
       <div class="hbar">
         <div class="hbar-track"><div class="hbar-fill xp" id="xpBar" style="width:0%"></div></div>
         <div class="hbar-val" id="xpVal">0/100</div>
+      </div>
+      <div class="hbar" style="opacity:0.5;">
+        <div class="hbar-track" style="background:rgba(170,102,255,0.1);"><div id="orbRadiusBar" class="hbar-fill" style="width:12%;background:linear-gradient(90deg,#5a1fff,#aa66ff);transition:width 0.3s;"></div></div>
+        <div class="hbar-val" id="orbRadiusVal" style="color:#aa66ff;font-size:6px;">🔮10px</div>
       </div>
       <div id="rankTag">
         <span class="rlet" id="rankLetter">E</span>
@@ -1106,7 +1123,16 @@ const AudioEngine=(()=>{
     g.gain.linearRampToValueAtTime(0,t+delay+dur+rel);
     o.start(t);o.stop(t+delay+dur+rel+.05);
   }
-  return{play};
+  function playNoiseBurst(vol=0.18,hp=800,dur=0.12){
+    const ac=getCtx();if(!ac)return;
+    try{const len=Math.floor(ac.sampleRate*dur),buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,1.5);
+    const src=ac.createBufferSource(),g=ac.createGain(),f=ac.createBiquadFilter();
+    f.type='highpass';f.frequency.value=hp;src.buffer=buf;src.connect(f);f.connect(g);g.connect(ac.destination);
+    g.gain.setValueAtTime(vol,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    src.start(ac.currentTime);}catch(e){}
+  }
+  return{play,playNoiseBurst};
 })();
 
 /* ── SCREEN SHAKE ── */
@@ -1263,32 +1289,112 @@ const XPOrbs={
     window.addEventListener('resize',()=>{this.canvas.width=window.innerWidth;this.canvas.height=window.innerHeight;});
     this.ctx=this.canvas.getContext('2d');
   },
-  spawn(ex,ey,px,py,count=3){
+  ORB_TIERS:[
+    {rarity:'common', xpMult:1,   color:'#aaaaff', chance:60},
+    {rarity:'rare',   xpMult:2,   color:'#44ccff', chance:28},
+    {rarity:'epic',   xpMult:4,   color:'#cc66ff', chance:10},
+    {rarity:'mythic', xpMult:10,  color:'#ffd700', chance:2},
+  ],
+  _rollTier(){
+    const r=Math.random()*100;let acc=0;
+    for(const t of this.ORB_TIERS){acc+=t.chance;if(r<acc)return t;}
+    return this.ORB_TIERS[0];
+  },
+  _rollBuildTag(){
+    const tags=['CRIT','SHADOW','BLEED','SPEED','TANK'];
+    return Math.random()<0.30?tags[Math.floor(Math.random()*tags.length)]:null;
+  },
+  spawn(ex,ey,px,py,count=3,baseXP=22,forceTier=null){
     for(let i=0;i<count;i++){
       const a=Math.random()*Math.PI*2,r=20+Math.random()*30;
-      this.orbs.push({x:ex+Math.cos(a)*r,y:ey+Math.sin(a)*r,tx:px,ty:py,life:900+i*60,maxLife:900+i*60,delay:i*60,r:3+Math.random()*2,speed:.08+Math.random()*.04});
+      const tier=forceTier||this._rollTier();
+      const buildTag=this._rollBuildTag();
+      const decayBase=900+i*60;
+      this.orbs.push({
+        x:ex+Math.cos(a)*r,y:ey+Math.sin(a)*r,
+        tx:px,ty:py,
+        life:decayBase,maxLife:decayBase,
+        delay:i*60,
+        r:(tier.rarity==='mythic'?5:tier.rarity==='epic'?4.5:3)+Math.random()*1.5,
+        speed:.08+Math.random()*.04,
+        xpValue:Math.round(baseXP*tier.xpMult),
+        tier,buildTag,
+        collected:false,
+        bobOffset:Math.random()*Math.PI*2,
+      });
     }
   },
-  update(dt,px,py){
+  update(dt,px,py,G){
+    const collectRadius=(G&&G._orbCollectRadius)?G._orbCollectRadius:10;
     for(let i=this.orbs.length-1;i>=0;i--){
       const o=this.orbs[i];
       o.delay-=dt;if(o.delay>0)continue;
-      o.life-=dt;o.tx=px;o.ty=py;
+      o.life-=dt;
+      const _pvx=G?((G.player.x-(G._lastPX||G.player.x))*6):0;
+      const _pvy=G?((G.player.y-(G._lastPY||G.player.y))*6):0;
+      o.tx=px+_pvx;o.ty=py+_pvy;
       const dx=o.tx-o.x,dy=o.ty-o.y,dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist<10){this.orbs.splice(i,1);continue;}
-      const spd=o.speed*(1+Math.max(0,900-o.life)*.003);
-      o.x+=dx*spd*(dt/16);o.y+=dy*spd*(dt/16);
+      /* Collect on proximity OR when timer expires — XP is never lost */
+      if(dist<collectRadius||o.life<=0){
+        if(G){
+          const finalXP=Math.round(o.xpValue*(G.prestige?.passives?.xp_hunger?1.3:1));
+          awardXP(G,finalXP);
+          if(o.tier&&o.tier.rarity==='mythic'){AudioEngine.playNoiseBurst(0.22,400,0.15);flashScreen(o.tier.color,0.16,200);}
+          else if(o.tier&&o.tier.rarity==='epic'){AudioEngine.playNoiseBurst(0.1,700,0.09);}
+          if(o.tier&&o.tier.rarity==='mythic')addKillFeed(`✦ MYTHIC +${finalXP}XP`,o.tier.color);
+          else if(o.tier&&o.tier.rarity==='epic')addKillFeed(`◈ EPIC +${finalXP}XP`,o.tier.color);
+          if(o.buildTag&&o.buildTag===G.buildType){
+            G.buildTags[o.buildTag.toLowerCase()]=(G.buildTags[o.buildTag.toLowerCase()]||0)+15;
+            spawnDmgText(G,px,py-20,`+${o.buildTag}`,o.tier.color);
+            G._buildResonanceTimer=800;
+          }
+          if(G._questStats){
+            G._questStats.orbsCollected=(G._questStats.orbsCollected||0)+1;
+            if(o.tier&&o.tier.rarity==='mythic')
+              G._questStats.mythicOrbsCollected=(G._questStats.mythicOrbsCollected||0)+1;
+            const _oc2=G._questStats.orbsCollected;
+            if(_oc2===50||_oc2===100||_oc2===200)autoSave(G);
+          }
+        }
+        this.orbs.splice(i,1);continue;
+      }
+      /* Orbs accelerate toward player as timer runs low */
+      const urgency=1+Math.max(0,(o.maxLife-o.life)/o.maxLife)*4;
+      const spd=o.speed*urgency;
+      o.x+=dx/Math.max(dist,1)*spd*(dt/16);o.y+=dy/Math.max(dist,1)*spd*(dt/16);
+      if(G&&!G._orbHintShown&&dist<140){G._orbHintShown=true;spawnDmgText(G,o.x,o.y-30,'Walk through to collect XP','#aaaaff');}
     }
   },
-  draw(){
+  draw(cam){
     const ctx=this.ctx;ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    const _cx=cam?cam.x:0,_cy=cam?cam.y:0;
     for(const o of this.orbs){
       if(o.delay>0)continue;
       const a=Math.min(1,o.life/200);
-      ctx.save();ctx.globalAlpha=a;
-      const rg=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
-      rg.addColorStop(0,'#ffffff');rg.addColorStop(.5,'#aa66ff');rg.addColorStop(1,'transparent');
-      ctx.fillStyle=rg;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();
+      const col=(o.tier&&o.tier.color)||'#aa66ff';
+      const pulse=0.7+Math.sin(performance.now()*0.006+(o.bobOffset||0))*0.3;
+      const _ox=o.x-_cx,_oy=o.y-_cy;
+      if(_ox<-24||_ox>this.canvas.width+24||_oy<-24||_oy>this.canvas.height+24)continue;
+      ctx.save();ctx.globalAlpha=a*pulse;
+      ctx.beginPath();ctx.arc(_ox,_oy,o.r,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.shadowBlur=o.tier&&o.tier.rarity==='mythic'?18:8;
+      ctx.shadowColor=col;ctx.fill();
+      ctx.globalAlpha=a*0.6;ctx.beginPath();ctx.arc(_ox,_oy,o.r*0.4,0,Math.PI*2);
+      ctx.fillStyle='#ffffff';ctx.shadowBlur=0;ctx.fill();
+      if(o.tier&&o.tier.rarity==='mythic'){
+        ctx.globalAlpha=a*0.5;ctx.beginPath();ctx.arc(_ox,_oy,o.r*1.8,0,Math.PI*2);
+        ctx.strokeStyle=col;ctx.lineWidth=1;ctx.stroke();
+      }
+      if(o.buildTag){
+        ctx.globalAlpha=a*0.9;ctx.beginPath();ctx.arc(_ox,_oy-o.r-3,2,0,Math.PI*2);
+        ctx.fillStyle='#ffffff';ctx.fill();
+      }
+      if(o.xpValue&&o.xpValue>22){
+        ctx.globalAlpha=a*0.82;ctx.font="bold 8px 'Share Tech Mono',monospace";
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillStyle=col;ctx.shadowBlur=4;ctx.shadowColor=col;
+        ctx.fillText('+'+o.xpValue,_ox,_oy+o.r+8);
+      }
       ctx.restore();
     }
   }
@@ -1898,6 +2004,140 @@ function applyEquipStats(p,item,sign){
   // avoid double-applying atk from legacy if stat already covers it
 }
 
+const WORLD_W=4000,WORLD_H=4000;
+
+/* ============================================================
+   AI TERRAIN GENERATOR — 40x40 tile map, 100px per tile = 4000px world
+   Claude generates the layout; an offscreen canvas bakes it once.
+   ============================================================ */
+const TERRAIN={
+  TILE:100,COLS:40,ROWS:40,tiles:null,canvas:null,ready:false,generating:false,
+  DEFS:{
+    floor:  {fill:'#0a0a18',stroke:'#14142a'},
+    stone:  {fill:'#111128',stroke:'#1a1a3a'},
+    ruin:   {fill:'#0d0d22',stroke:'#1e1e44'},
+    void:   {fill:'#050510',stroke:'#0a0a20'},
+    crystal:{fill:'#0d0820',stroke:'#3322aa'},
+    lava:   {fill:'#1a0500',stroke:'#aa2200'},
+    moss:   {fill:'#040f08',stroke:'#0a2210'},
+    altar:  {fill:'#0f0818',stroke:'#6622aa'},
+    wall:   {fill:'#070718',stroke:'#000008'},
+    water:  {fill:'#020d1a',stroke:'#0a2244'},
+    sand:   {fill:'#0f0c04',stroke:'#1e1800'},
+    gate:   {fill:'#080218',stroke:'#4400cc'},
+  },
+  drawTile(ctx,type,x,y,T){
+    const d=this.DEFS[type]||this.DEFS.floor;
+    ctx.fillStyle=d.fill;ctx.fillRect(x,y,T,T);
+    ctx.strokeStyle=d.stroke;ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,T-1,T-1);
+    ctx.save();ctx.globalAlpha=0.18;
+    if(type==='crystal'){
+      ctx.strokeStyle='#6644ff';ctx.lineWidth=1;ctx.beginPath();
+      ctx.moveTo(x+T*.5,y+T*.2);ctx.lineTo(x+T*.3,y+T*.8);
+      ctx.moveTo(x+T*.5,y+T*.2);ctx.lineTo(x+T*.7,y+T*.8);ctx.stroke();
+    }else if(type==='lava'){
+      ctx.fillStyle='#ff4400';ctx.beginPath();ctx.arc(x+T*.5,y+T*.5,T*.22,0,Math.PI*2);ctx.fill();
+    }else if(type==='ruin'){
+      ctx.strokeStyle='#4444aa';ctx.lineWidth=1;ctx.strokeRect(x+T*.2,y+T*.2,T*.6,T*.6);
+    }else if(type==='altar'){
+      ctx.fillStyle='#aa44ff';ctx.fillRect(x+T*.35,y+T*.35,T*.3,T*.3);
+    }else if(type==='gate'){
+      ctx.strokeStyle='#8844ff';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(x+T*.5,y+T*.5,T*.3,0,Math.PI*2);ctx.stroke();
+    }else if(type==='water'){
+      ctx.strokeStyle='#1155aa';ctx.lineWidth=1;
+      for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(x+T*.1,y+T*(.3+i*.2));ctx.lineTo(x+T*.9,y+T*(.3+i*.2));ctx.stroke();}
+    }else if(type==='moss'){
+      ctx.fillStyle='#22aa44';
+      for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(x+T*(.2+i*.3),y+T*.5,T*.1,0,Math.PI*2);ctx.fill();}
+    }else if(type==='wall'){
+      ctx.fillStyle='#222244';ctx.fillRect(x,y,T,T);
+    }
+    ctx.restore();
+  },
+  bake(){
+    const T=this.TILE;
+    this.canvas=document.createElement('canvas');
+    this.canvas.width=WORLD_W;this.canvas.height=WORLD_H;
+    const ctx=this.canvas.getContext('2d');
+    ctx.fillStyle='#05050f';ctx.fillRect(0,0,WORLD_W,WORLD_H);
+    for(let r=0;r<this.ROWS;r++)
+      for(let c=0;c<this.COLS;c++)
+        this.drawTile(ctx,(this.tiles[r]&&this.tiles[r][c])||'floor',c*T,r*T,T);
+    this.ready=true;
+  },
+  draw(ctx){
+    if(this.ready&&this.canvas)ctx.drawImage(this.canvas,0,0);
+  },
+  async generate(mode,rank){
+    if(this.generating)return;
+    this.generating=true;
+    /* Show procedural terrain immediately while AI generates */
+    this.generateFallback(mode,rank);
+    const types=Object.keys(this.DEFS).join(', ');
+    const ctx=mode==='dungeon'?`A ${rank}-rank dungeon. Dark, oppressive.`:'An open shadow world. Ruins, varied terrain.';
+    const prompt=`Game world designer task: generate a ${this.COLS}x${this.ROWS} tile map for a dark fantasy RPG.
+
+Context: ${ctx}
+Tile types available: ${types}
+
+Rules:
+- wall: 10-20%, clusters near edges
+- floor+stone: 40-50% combined, most common
+- water/lava/crystal/moss: organic clusters 3-8 tiles each
+- altar+gate: rare, 2-4 total each
+- Center rows 15-25 cols 15-25: open floor/stone for spawn
+- Interesting paths, not random noise
+
+Return ONLY valid JSON, no markdown:
+{"tiles":[[${this.COLS} values per row, ${this.ROWS} rows total]],"biome":"short name"}
+Values must be from: ${types}`;
+    try{
+      const res=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:9000,
+          messages:[{role:'user',content:prompt}]})
+      });
+      const data=await res.json();
+      const raw=(data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+      const parsed=JSON.parse(raw);
+      if(Array.isArray(parsed.tiles)&&parsed.tiles.length===this.ROWS){
+        const valid=new Set(Object.keys(this.DEFS));
+        this.tiles=parsed.tiles.map(row=>(Array.isArray(row)?row:[]).map(t=>valid.has(t)?t:'floor'));
+        this.bake();
+        if(window._G)notify(window._G,'🗺 '+(parsed.biome||'Terrain')+' generated','#aa66ff',3000);
+      }else throw new Error('tile count mismatch: '+parsed.tiles?.length);
+    }catch(e){
+      console.warn('[Terrain] AI generation failed:',e.message,'(using procedural fallback)');
+    }
+    this.generating=false;
+  },
+  generateFallback(mode,rank){
+    this.tiles=[];
+    for(let r=0;r<this.ROWS;r++){
+      this.tiles[r]=[];
+      for(let c=0;c<this.COLS;c++){
+        if(Math.hypot(r-this.ROWS/2,c-this.COLS/2)<8){this.tiles[r][c]='floor';continue;}
+        const n=Math.random();
+        if(n<.12)this.tiles[r][c]='wall';
+        else if(n<.20)this.tiles[r][c]='stone';
+        else if(n<.28)this.tiles[r][c]='ruin';
+        else if(n<.34)this.tiles[r][c]=mode==='dungeon'?'lava':'water';
+        else if(n<.38)this.tiles[r][c]='crystal';
+        else if(n<.42)this.tiles[r][c]='moss';
+        else if(n<.44)this.tiles[r][c]='altar';
+        else this.tiles[r][c]='floor';
+      }
+    }
+    this.bake();
+  },
+  regenerate(mode,rank){
+    this.ready=false;this.tiles=null;
+    this.generate(mode||'open_world',rank||'E');
+  },
+};
+
+
 function makeGameplayState(){
   return{
     mode:"OPEN_WORLD",
@@ -1934,13 +2174,14 @@ function makeGameplayState(){
     prestige:{tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0},
     quests:[],questLastRefresh:0,
     _deathPenaltyApplied:false,
+    cam:{x:0,y:0},
   };
 }
 function initState(canvas,ctx){
   const G=Object.assign(makeGameplayState(),{canvas,ctx,W:window.innerWidth,H:window.innerHeight,lastTime:0,keys:{},joy:{dx:0,dy:0,active:false},isTouch:false});
   G.player.x=G.W/2;G.player.y=G.H/2;
   for(const s of EQ_SLOTS)G.inventory.equipped[s.id]=null;
-  G._questStats={maxCombo:0,goldEarned:0,itemsCollected:0,bRankClear:0};
+  G._questStats={maxCombo:0,goldEarned:0,itemsCollected:0,bRankClear:0,orbsCollected:0,mythicOrbsCollected:0};
   G._skillUpgrades={};
   initAbilityCooldowns(G);return G;
 }
@@ -1948,10 +2189,11 @@ function resetGameState(G){
   const fresh=makeGameplayState();
   for(const k of Object.keys(fresh))G[k]=fresh[k];
   G.keys={};G.joy.dx=G.joy.dy=0;G.joy.active=false;
-  G.player.x=G.W/2;G.player.y=G.H/2;
+  G.player.x=WORLD_W/2;G.player.y=WORLD_H/2;
+  G.cam={x:WORLD_W/2-G.W/2,y:WORLD_H/2-G.H/2};
   for(const s of EQ_SLOTS)G.inventory.equipped[s.id]=null;
   G.eliteTimer=90000;G.projectiles=[];G.buildType="NONE";
-  G._questStats={maxCombo:0,goldEarned:0,itemsCollected:0,bRankClear:0};
+  G._questStats={maxCombo:0,goldEarned:0,itemsCollected:0,bRankClear:0,orbsCollected:0,mythicOrbsCollected:0};
   G._skillUpgrades={};
   G.buildTags={crit:0,shadow:0,bleed:0,speed:0,tank:0};
   G.buildDef=BUILD_DEFS.NONE;G._unlockedMilestones={};
@@ -2026,8 +2268,8 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAllPanels();});
 
 function pickPortalRank(){const r=Math.random();for(const[rank,prob]of CONFIG.portalWeights)if(r<=prob)return rank;return"E";}
 function spawnPortal(G,type,x,y,rank){G.portals.push({id:G.nextPortalId++,x,y,r:28,rank:rank||pickPortalRank(),active:true,type,pulse:0,life:CONFIG.portalLifespan});}
-function spawnEntryPortal(G){let x,y,a=0;do{x=80+Math.random()*(G.W-160);y=80+Math.random()*(G.H-160);a++;}while(Math.hypot(x-G.player.x,y-G.player.y)<220&&a<30);spawnPortal(G,"ENTRY",x,y,pickPortalRank());notify(G,"⬡ A Gate has appeared!","#aaccff");}
-function spawnExitPortal(G){const a=Math.random()*Math.PI*2;G.portals.push({id:G.nextPortalId++,x:G.player.x+Math.cos(a)*120,y:G.player.y+Math.sin(a)*120,r:28,rank:G.dungeon.rank,active:true,type:"EXIT",pulse:0,life:120000});}
+function spawnEntryPortal(G){let x,y,a=0;do{x=200+Math.random()*(WORLD_W-400);y=200+Math.random()*(WORLD_H-400);a++;}while(Math.hypot(x-G.player.x,y-G.player.y)<280&&a<40);spawnPortal(G,"ENTRY",x,y,pickPortalRank());notify(G,"⬡ A Gate has appeared!","#aaccff");}
+function spawnExitPortal(G){const a=Math.random()*Math.PI*2,d=160;const ex=Math.max(100,Math.min(WORLD_W-100,G.player.x+Math.cos(a)*d));const ey=Math.max(100,Math.min(WORLD_H-100,G.player.y+Math.sin(a)*d));G.portals.push({id:G.nextPortalId++,x:ex,y:ey,r:28,rank:G.dungeon.rank,active:true,type:"EXIT",pulse:0,life:120000});}
 
 const ENEMY_COLORS={E:["#ff4455","#cc6677"],D:["#44aa66","#66cc88"],C:["#4488cc","#3366aa"],B:["#cc6600","#ff8800"],A:["#8833ff","#aa55ff"],S:["#ff33ff","#cc00cc"]};
 
@@ -2080,14 +2322,46 @@ function makeEnemy(G,x,y,sm){
     projCooldown:0,
   };
 }
-function spawnEnemy(G){const side=Math.floor(Math.random()*4),pad=40;let x,y;switch(side){case 0:x=Math.random()*G.W;y=-pad;break;case 1:x=G.W+pad;y=Math.random()*G.H;break;case 2:x=Math.random()*G.W;y=G.H+pad;break;default:x=-pad;y=Math.random()*G.H;}G.enemies.push(makeEnemy(G,x,y,1));}
-function spawnDungeonEnemy(G){const pad=60;let x,y;const side=Math.floor(Math.random()*4);switch(side){case 0:x=pad+Math.random()*(G.W-pad*2);y=pad;break;case 1:x=G.W-pad;y=pad+Math.random()*(G.H-pad*2);break;case 2:x=pad+Math.random()*(G.W-pad*2);y=G.H-pad;break;default:x=pad;y=pad+Math.random()*(G.H-pad*2);}G.enemies.push(makeEnemy(G,x,y,CONFIG.dungeonScale[G.dungeon.rank]||1));}
+function spawnEnemy(G){
+  const cam=G.cam||{x:0,y:0};
+  const cx=cam.x+G.W/2,cy=cam.y+G.H/2;
+  const spawnR=Math.max(G.W,G.H)*0.65;
+  const a=Math.random()*Math.PI*2;
+  const x=Math.max(40,Math.min(WORLD_W-40,cx+Math.cos(a)*spawnR));
+  const y=Math.max(40,Math.min(WORLD_H-40,cy+Math.sin(a)*spawnR));
+  G.enemies.push(makeEnemy(G,x,y,1));
+}
+function spawnDungeonEnemy(G){
+  const cam=G.cam||{x:0,y:0};
+  const cx=cam.x+G.W/2,cy=cam.y+G.H/2,pad=60,hw=G.W/2,hh=G.H/2;
+  const side=Math.floor(Math.random()*4);let x,y;
+  switch(side){
+    case 0:x=cx-hw+pad+Math.random()*(G.W-pad*2);y=cy-hh+pad;break;
+    case 1:x=cx+hw-pad;y=cy-hh+pad+Math.random()*(G.H-pad*2);break;
+    case 2:x=cx-hw+pad+Math.random()*(G.W-pad*2);y=cy+hh-pad;break;
+    default:x=cx-hw+pad;y=cy-hh+pad+Math.random()*(G.H-pad*2);
+  }
+  x=Math.max(40,Math.min(WORLD_W-40,x));y=Math.max(40,Math.min(WORLD_H-40,y));
+  G.enemies.push(makeEnemy(G,x,y,CONFIG.dungeonScale[G.dungeon.rank]||1));
+}
 const BOSS_DEFS={E:{name:"Stone Golem",icon:"🗿"},D:{name:"Ancient Treant",icon:"🌳"},C:{name:"Tomb Guardian",icon:"🏺"},B:{name:"Flame Monarch",icon:"😈"},A:{name:"Querehsha",icon:"🕷️"},S:{name:"Antares",icon:"🐉"}};
-function spawnBoss(G){const rs=CONFIG.dungeonScale[G.dungeon.rank]||1;const hp=Math.round(3200*rs*(1+(G.player.level-1)*.1));const def=BOSS_DEFS[G.dungeon.rank]||BOSS_DEFS["E"];G.boss={x:G.W/2,y:G.H/2,r:34,name:def.name,icon:def.icon,hp,maxHp:hp,speed:1.4*Math.sqrt(rs),atk:Math.round(22*rs),atkRate:900,atkTimer:0,atkSpecialTimer:0,dead:false,phase:1,flashTimer:0,stunTimer:0,state:"ALIVE",extractable:false,extracted:false,dungeonRank:G.dungeon.rank};showBossWarn(def.name);}
+function spawnBoss(G){const rs=CONFIG.dungeonScale[G.dungeon.rank]||1;const hp=Math.round(3200*rs*(1+(G.player.level-1)*.1));const def=BOSS_DEFS[G.dungeon.rank]||BOSS_DEFS["E"];G.boss={x:G.player.x,y:G.player.y-200,r:34,name:def.name,icon:def.icon,hp,maxHp:hp,speed:1.4*Math.sqrt(rs),atk:Math.round(22*rs),atkRate:900,atkTimer:0,atkSpecialTimer:0,dead:false,phase:1,flashTimer:0,stunTimer:0,state:"ALIVE",extractable:false,extracted:false,dungeonRank:G.dungeon.rank};showBossWarn(def.name);
+  if(typeof G!=='undefined'&&G&&G.cam){setTimeout(()=>{if(G.boss){G.cam.x=G.boss.x-G.W/2;G.cam.y=G.boss.y-G.H/2;}},400);}}
 
+function showWaveCountdown(G,wave,cb){
+  const el=document.getElementById('waveCountdown');
+  if(!el)return cb();
+  document.getElementById('waveCountNum').textContent=3;
+  document.getElementById('waveCountSub').textContent=wave===3?'BOSS INCOMING':'WAVE '+wave;
+  el.style.display='block';let n=3;
+  const iv=setInterval(()=>{n--;AudioEngine.play('hit',0.2);
+    if(n<=0){clearInterval(iv);el.style.display='none';cb();}
+    else document.getElementById('waveCountNum').textContent=n;
+  },900);
+}
 function startWave(G,wave){G.dungeon.wave=wave;G.dungeon.waveActive=true;G.dungeon.betweenWaveTimer=0;G.enemies=[];G.boss=null;if(wave===1){for(let i=0;i<7;i++)spawnDungeonEnemy(G);notify(G,"⚔ WAVE 1 — HOLD THE LINE","#ffcc44");flashLevelUp("WAVE 1");}else if(wave===2){for(let i=0;i<11;i++)spawnDungeonEnemy(G);notify(G,"⚔ WAVE 2 — ELITE RESISTANCE","#ffcc44");flashLevelUp("WAVE 2");}else if(wave===3){spawnBoss(G);for(let i=0;i<3;i++)spawnDungeonEnemy(G);notify(G,`⚠ BOSS: ${G.boss.name}!`,"#ff4444");flashLevelUp("⚠ BOSS");}}
-function enterDungeon(G,portal){G.mode="DUNGEON";G.dungeon.active=true;G.dungeon.rank=portal.rank;G.dungeon.wave=0;G.dungeon.cleared=false;G.dungeon.waveActive=false;G.dungeon.betweenWaveTimer=1200;G.dungeon.bossDefeated=false;G.enemies=[];G.boss=null;G.portals=[];AudioEngine.play('gate',.6);flashScreen('#3388ff',.35,600);notify(G,`Entering ${portal.rank}-Rank Gate...`,"#aaccff");}
-function exitDungeon(G){G.mode="OPEN_WORLD";G.dungeon.active=false;G.dungeon.rank=null;G.dungeon.wave=0;G.dungeon.cleared=false;G.dungeon.waveActive=false;G.dungeon.bossDefeated=false;G.enemies=[];G.boss=null;G.portals=[];G.spawner.timer=0;for(let i=0;i<4;i++)spawnEnemy(G);notify(G,"Returned to Open World","#88ffbb");AudioEngine.play('gate',.4);autoSave(G);}
+function enterDungeon(G,portal){G.mode="DUNGEON";TERRAIN.regenerate("dungeon",portal.rank);G.dungeon.active=true;G.dungeon.rank=portal.rank;G.dungeon.wave=0;G.dungeon.cleared=false;G.dungeon.waveActive=false;G.dungeon.betweenWaveTimer=1200;G.dungeon.bossDefeated=false;G.enemies=[];G.boss=null;G.portals=[];AudioEngine.play('gate',.6);flashScreen('#3388ff',.35,600);notify(G,`Entering ${portal.rank}-Rank Gate...`,"#aaccff");}
+function exitDungeon(G){G.mode="OPEN_WORLD";TERRAIN.regenerate("open_world","E");G.dungeon.active=false;G.dungeon.rank=null;G.dungeon.wave=0;G.dungeon.cleared=false;G.dungeon.waveActive=false;G.dungeon.bossDefeated=false;G.enemies=[];G.boss=null;G.portals=[];G.spawner.timer=0;for(let i=0;i<4;i++)spawnEnemy(G);notify(G,"Returned to Open World","#88ffbb");AudioEngine.play('gate',.4);autoSave(G);}
 
 function damageTarget(G,e,dmg,crit){const isBoss=G.boss===e;e.hp-=dmg;e.flashTimer=80;spawnDmgText(G,e.x+(Math.random()-.5)*16,e.y-e.r-8,crit?`✦${dmg}`:`${dmg}`,crit?"#ff6200":"#ffd700");
 // Jinwoo's Dagger bleed passive
@@ -2300,7 +2574,12 @@ function updateInteraction(G,dt){
   for(const portal of G.portals){if(!portal.active)continue;const dist=Math.hypot(p.x-portal.x,p.y-portal.y);if(dist<p.r+portal.r+10){p.interactCooldown=500;if(portal.type==="ENTRY"&&G.mode==="OPEN_WORLD"){if(p.gateKeys<=0){notify(G,"Not enough Gate Keys","#ff6680");return;}p.gateKeys--;enterDungeon(G,portal);}else if(portal.type==="EXIT"&&G.mode==="DUNGEON"){exitDungeon(G);}return;}}
 }
 
-function updateMovement(G,dt){const p=G.player;let dx=0,dy=0;if(G.keys["ArrowLeft"]||G.keys["a"]||G.keys["A"])dx-=1;if(G.keys["ArrowRight"]||G.keys["d"]||G.keys["D"])dx+=1;if(G.keys["ArrowUp"]||G.keys["w"]||G.keys["W"])dy-=1;if(G.keys["ArrowDown"]||G.keys["s"]||G.keys["S"])dy+=1;if(G.joy.active){dx=G.joy.dx;dy=G.joy.dy;}const mag=Math.sqrt(dx*dx+dy*dy);if(mag>.01){const spd=G.joy.active?p.speed*Math.min(mag,1):p.speed;p.x+=(dx/mag)*spd*(dt/16);p.y+=(dy/mag)*spd*(dt/16);if(Math.abs(dx/mag)>.1)p.facing=dx>0?1:-1;}p.x=Math.max(p.r,Math.min(G.W-p.r,p.x));p.y=Math.max(p.r,Math.min(G.H-p.r,p.y));}
+function updateMovement(G,dt){const p=G.player;let dx=0,dy=0;if(G.keys["ArrowLeft"]||G.keys["a"]||G.keys["A"])dx-=1;if(G.keys["ArrowRight"]||G.keys["d"]||G.keys["D"])dx+=1;if(G.keys["ArrowUp"]||G.keys["w"]||G.keys["W"])dy-=1;if(G.keys["ArrowDown"]||G.keys["s"]||G.keys["S"])dy+=1;if(G.joy.active){dx=G.joy.dx;dy=G.joy.dy;}const mag=Math.sqrt(dx*dx+dy*dy);if(mag>.01){const spd=G.joy.active?p.speed*Math.min(mag,1):p.speed;p.x+=(dx/mag)*spd*(dt/16);p.y+=(dy/mag)*spd*(dt/16);if(Math.abs(dx/mag)>.1)p.facing=dx>0?1:-1;}p.x=Math.max(p.r,Math.min(WORLD_W-p.r,p.x));p.y=Math.max(p.r,Math.min(WORLD_H-p.r,p.y));
+  if(!G.cam)G.cam={x:WORLD_W/2-G.W/2,y:WORLD_H/2-G.H/2};
+  G.cam.x+=(p.x-G.W/2-G.cam.x)*0.10;
+  G.cam.y+=(p.y-G.H/2-G.cam.y)*0.10;
+  G.cam.x=Math.max(0,Math.min(WORLD_W-G.W,G.cam.x));
+  G.cam.y=Math.max(0,Math.min(WORLD_H-G.H,G.cam.y));}
 
 function updateRegen(G,dt){
   const p=G.player;p.mp=Math.min(p.maxMp,p.mp+CONFIG.player.mpRegen*dt);
@@ -2377,6 +2656,7 @@ function tickEnemyAI(G,dt){const p=G.player;for(const e of G.enemies){if(e.state
 }}
 function tickCorpses(G,dt){for(let i=G.enemies.length-1;i>=0;i--){const e=G.enemies[i];if(e.state!=="DEAD")continue;if(e.extracted){G.enemies.splice(i,1);continue;}e.deathTimer-=dt;if(e.deathTimer<=0)G.enemies.splice(i,1);}}
 function updateBossAI(G,dt){const boss=G.boss;if(!boss||boss.dead)return;const p=G.player;if(boss.flashTimer>0)boss.flashTimer-=dt;if(boss.stunTimer>0){boss.stunTimer-=dt;return;}if(boss.hp<boss.maxHp*.5&&boss.phase===1){boss.phase=2;boss.speed*=1.5;notify(G,"⚡ BOSS BERSERK!","#ff4400");flashLevelUp("⚠ BERSERK");}
+  if(boss.phase>=2&&Math.random()<0.007)flashScreen('#ff2200',0.07,100);
 // Phase 3 — "OH SHIT" moment at 10%
 if(boss.hp<boss.maxHp*.1&&boss.phase===2){boss.phase=3;boss.speed*=1.4;boss.atkRate=600;notify(G,"☠ FINAL PHASE — SURVIVE!","#ff0000",2000);flashScreen('#ff0000',.6,800);screenShake(12);}
 const dx=p.x-boss.x,dy=p.y-boss.y,dist=Math.sqrt(dx*dx+dy*dy)||1,contact=p.r+boss.r+2;if(dist>contact){boss.x+=(dx/dist)*boss.speed*(dt/16);boss.y+=(dy/dist)*boss.speed*(dt/16);}else{boss.atkTimer+=dt;boss.atkSpecialTimer+=dt;if(boss.atkTimer>=boss.atkRate){boss.atkTimer=0;let dmg=Math.max(1,boss.atk-Math.floor(p.defense/2));if(G.dailyMod?.enemyDmgMult)dmg=Math.round(dmg*G.dailyMod.enemyDmgMult);// Beru's Carapace passive
@@ -2393,6 +2673,31 @@ p.hp=Math.max(0,p.hp-dmg);spawnDmgText(G,p.x+(Math.random()-.5)*20,p.y-24,`-${dm
   }
 }}}
 
+const XP_SHRINES=[
+  {x:WORLD_W*0.25,y:WORLD_H*0.25,timer:0,rate:28000},
+  {x:WORLD_W*0.75,y:WORLD_H*0.25,timer:0,rate:28000},
+  {x:WORLD_W*0.25,y:WORLD_H*0.75,timer:0,rate:28000},
+  {x:WORLD_W*0.75,y:WORLD_H*0.75,timer:0,rate:28000},
+  {x:WORLD_W*0.5,  y:WORLD_H*0.5, timer:0,rate:20000},
+];
+function updateShrines(G,dt){
+  if(G.mode!=='OPEN_WORLD')return;
+  const cam=G.cam||{x:0,y:0};
+  for(const sh of XP_SHRINES){
+    sh.timer+=dt;
+    if(sh.timer>=sh.rate){sh.timer=0;XPOrbs.spawn(sh.x,sh.y,G.player.x,G.player.y,3,18);}
+    const sx=sh.x-cam.x,sy=sh.y-cam.y;
+    if(sx<-30||sx>G.W+30||sy<-30||sy>G.H+30)continue;
+    const ctx=G.ctx,prog=sh.timer/sh.rate;
+    ctx.save();ctx.globalAlpha=0.22+Math.sin(performance.now()*0.003)*0.1;
+    ctx.fillStyle='#aa66ff';ctx.shadowBlur=12;ctx.shadowColor='#aa66ff';
+    ctx.beginPath();ctx.arc(sx,sy,7+prog*3,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=0.08;ctx.beginPath();ctx.arc(sx,sy,18,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=0.4;ctx.strokeStyle='#aa66ff';ctx.lineWidth=1.5;ctx.shadowBlur=5;
+    ctx.beginPath();ctx.arc(sx,sy,12,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+}
 function updatePortalSpawner(G,dt){if(G.mode!=="OPEN_WORLD")return;for(let i=G.portals.length-1;i>=0;i--){const portal=G.portals[i];portal.pulse=(portal.pulse+dt*.003)%(Math.PI*2);portal.life-=dt;if(portal.life<=0){G.portals.splice(i,1);continue;}}const hasEntry=G.portals.some(p=>p.type==="ENTRY"&&p.active);if(!hasEntry){G.portalSpawnTimer+=dt;if(G.portalSpawnTimer>=G.portalSpawnRate){G.portalSpawnTimer=0;spawnEntryPortal(G);}}}
 function updateOpenWorldEnemies(G,dt){
   G.spawner.timer+=dt;
@@ -2402,15 +2707,32 @@ function updateOpenWorldEnemies(G,dt){
   G.eliteTimer=(G.eliteTimer||90000)-dt;
   if(G.eliteTimer<=0){
     G.eliteTimer=70000+Math.random()*40000;
-    const elite=makeEnemy(G,-60+Math.random()*(G.W+120),-60);
+    const _ecam=G.cam||{x:0,y:0};const elite=makeEnemy(G,_ecam.x+G.W+60,_ecam.y-60+Math.random()*(G.H+120));
     elite.type="berserk";elite.hp*=3;elite.maxHp=elite.hp;elite.atk*=2;elite.r=22;elite.color="#ff00ff";elite.label="ELITE";elite.icon="💀";
     G.enemies.push(elite);
     notify(G,"⚠ ELITE HUNTER INVASION!","#ff00ff",3000);flashScreen('#ff00ff',.3,600);screenShake(6);AudioEngine.play('bossappear',.5);
   }
+
+  /* Enemy separation — prevents stacking (Bones) */
+  for(let i=0;i<G.enemies.length;i++){for(let j=i+1;j<G.enemies.length;j++){
+    const a=G.enemies[i],b=G.enemies[j];
+    if(a.state!=='ALIVE'||b.state!=='ALIVE')continue;
+    const sd=Math.hypot(a.x-b.x,a.y-b.y),mn=(a.r+b.r)*0.85;
+    if(sd<mn&&sd>0.1){const sx=(a.x-b.x)/sd,sy=(a.y-b.y)/sd,sp=(mn-sd)*0.4;
+      a.x+=sx*sp;a.y+=sy*sp;b.x-=sx*sp;b.y-=sy*sp;}
+  }}
   tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);
 }
 function updateDungeon(G,dt){const d=G.dungeon;if(d.bossDefeated&&!d.cleared){d.cleared=true;d.waveActive=false;G.stats.dungeonsCleared++;spawnExitPortal(G);
-if(G._questStats&&['B','A','S'].includes(G.dungeon.rank))G._questStats.bRankClear=(G._questStats.bRankClear||0)+1;notify(G,"★ DUNGEON CLEARED!","#ffd700");flashLevelUp("DUNGEON CLEARED!");spawnParticles(G,G.player.x,G.player.y,20,"#ffd700",4);AudioEngine.play('rankup',.8);flashScreen('#ffd700',.4,1000);screenShake(8);}if(!d.waveActive){d.betweenWaveTimer-=dt;if(d.betweenWaveTimer<=0&&!d.cleared)startWave(G,d.wave+1);tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);return;}tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);if(d.wave<3&&G.enemies.filter(e=>e.state==="ALIVE").length===0&&d.waveActive){d.waveActive=false;d.betweenWaveTimer=1600;notify(G,"Wave cleared!","#88ffbb");AudioEngine.play('levelup',.4);}}
+if(G._questStats&&['B','A','S'].includes(G.dungeon.rank))G._questStats.bRankClear=(G._questStats.bRankClear||0)+1;notify(G,"★ DUNGEON CLEARED!","#ffd700");flashLevelUp("DUNGEON CLEARED!");spawnParticles(G,G.player.x,G.player.y,20,"#ffd700",4);AudioEngine.play('rankup',.8);flashScreen('#ffd700',.4,1000);screenShake(8);}if(!d.waveActive){d.betweenWaveTimer-=dt;if(d.betweenWaveTimer<=0&&!d.cleared)startWave(G,d.wave+1);tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);return;}/* Enemy separation — prevents stacking (Bones) */
+  for(let i=0;i<G.enemies.length;i++){for(let j=i+1;j<G.enemies.length;j++){
+    const a=G.enemies[i],b=G.enemies[j];
+    if(a.state!=='ALIVE'||b.state!=='ALIVE')continue;
+    const sd=Math.hypot(a.x-b.x,a.y-b.y),mn=(a.r+b.r)*0.85;
+    if(sd<mn&&sd>0.1){const sx=(a.x-b.x)/sd,sy=(a.y-b.y)/sd,sp=(mn-sd)*0.4;
+      a.x+=sx*sp;a.y+=sy*sp;b.x-=sx*sp;b.y-=sy*sp;}
+  }}
+  tickEnemyAI(G,dt);tickProjectiles(G,dt);tickCorpses(G,dt);updateBossAI(G,dt);if(d.wave<3&&G.enemies.filter(e=>e.state==="ALIVE").length===0&&d.waveActive){d.waveActive=false;d.betweenWaveTimer=1600;notify(G,"Wave cleared!","#88ffbb");AudioEngine.play('levelup',.4);}}
 function tickProjectiles(G,dt){
   if(!G.projectiles)G.projectiles=[];
   const p=G.player;
@@ -2418,7 +2740,7 @@ function tickProjectiles(G,dt){
     const pr=G.projectiles[i];
     pr.x+=pr.vx*(dt/16);pr.y+=pr.vy*(dt/16);
     pr.life-=dt;
-    if(pr.life<=0||pr.x<-50||pr.x>G.W+50||pr.y<-50||pr.y>G.H+50){G.projectiles.splice(i,1);continue;}
+    if(pr.life<=0||pr.x<0||pr.x>WORLD_W||pr.y<0||pr.y>WORLD_H){G.projectiles.splice(i,1);continue;}
     if(pr.owner==="enemy"){
       const dist=Math.hypot(pr.x-p.x,pr.y-p.y);
       if(dist<p.r+pr.r){
@@ -2461,41 +2783,85 @@ function killEnemy(G,e){
   for(const sh of G.shadows){if(sh._lastTarget===e){sh.identity&&(sh.identity.kills++);sh._lastTarget=null;}}
   spawnDmgText(G,e.x,e.y-30,"DEFEATED","#00ff88");
   spawnParticles(G,e.x,e.y,8,"#ff2244",2.5);
-  awardXP(G,CONFIG.xp.perKill);AudioEngine.play('kill',.2);
+  /* XP travels via orbs — awardXP fires on collection, not on kill */
+  AudioEngine.play('kill',.2);
   Combo.hit();KillStreak.kill();
-  XPOrbs.spawn(e.x,e.y,G.player.x,G.player.y,3);
+  const _orbCount=Math.min(6,3+Math.floor(Combo.count/8));
+  const _rankXpMult={E:1,D:1.3,C:1.7,B:2.2,A:3.0,S:4.0};
+  const _scaledXP=Math.round(CONFIG.xp.perKill*(_rankXpMult[G.dungeon?.rank]||1));
+  XPOrbs.spawn(e.x,e.y,G.player.x,G.player.y,_orbCount,_scaledXP);
   tryDropLoot(G,e.dungeonRank||"E",false);
 }
-function killBoss(G){G.stats.kills++;G.stats.bossKills++;const boss=G.boss;spawnDmgText(G,boss.x,boss.y-50,"BOSS SLAIN","#ffd700");spawnParticles(G,boss.x,boss.y,30,"#ff6200",5);spawnParticles(G,boss.x,boss.y,20,"#ffd700",3.5);awardXP(G,CONFIG.xp.bossKill);AudioEngine.play('rankup',.8);flashScreen('#ffd700',.5,700);screenShake(14,.7);hitStop(6);const p=G.player;if(p.gateKeys<p.maxGateKeys){p.gateKeys++;notify(G,"🗝 Gate Key obtained!","#ffd700");}const drops=2+Math.floor(Math.random()*3);for(let i=0;i<drops;i++)tryDropLoot(G,G.dungeon.rank,true);boss.state="DEAD";boss.deathTimer=4000;boss.extractable=true;G.dungeon.bossDefeated=true;XPOrbs.spawn(boss.x,boss.y,G.player.x,G.player.y,12);autoSave(G);}
+function killBoss(G){
+  G.stats.kills++;G.stats.bossKills++;
+  const boss=G.boss;
+  spawnDmgText(G,boss.x,boss.y-50,"BOSS SLAIN","#ffd700");
+  spawnParticles(G,boss.x,boss.y,30,"#ff6200",5);
+  spawnParticles(G,boss.x,boss.y,20,"#ffd700",3.5);
+  /* Boss XP travels via weighted orb cluster */
+  const bossRank=G.dungeon.rank||'E';
+  const rankOrbMult={E:1,D:1.4,C:1.9,B:2.6,A:3.5,S:5.0};
+  const baseXP=Math.round(CONFIG.xp.bossKill*(rankOrbMult[bossRank]||1));
+  const forcedTier=
+    bossRank==='S'?XPOrbs.ORB_TIERS[3]:
+    bossRank==='A'?XPOrbs.ORB_TIERS[2]:
+    bossRank==='B'?XPOrbs.ORB_TIERS[1]:null;
+  const forcedCount=bossRank==='S'?6:bossRank==='A'?4:bossRank==='B'?2:0;
+  for(let i=0;i<12;i++){
+    const ft=i<forcedCount?forcedTier:null;
+    XPOrbs.spawn(boss.x+(Math.random()-.5)*40,boss.y+(Math.random()-.5)*40,G.player.x,G.player.y,1,Math.round(baseXP/12),ft);
+  }
+  AudioEngine.play('rankup',.8);flashScreen('#ffd700',.5,700);screenShake(14,.7);hitStop(6);
+  const p=G.player;
+  if(p.gateKeys<p.maxGateKeys){p.gateKeys++;notify(G,"🗝 Gate Key obtained!","#ffd700");}
+  const drops=2+Math.floor(Math.random()*3);
+  for(let i=0;i<drops;i++)tryDropLoot(G,G.dungeon.rank,true);
+  boss.state="DEAD";boss.deathTimer=4000;boss.extractable=true;G.dungeon.bossDefeated=true;
+  autoSave(G);
+}
 function awardXP(G,amount){const p=G.player;const xpPrestige=G.prestige?.passives?.xp_hunger?1.3:1;const mult=((G.dailyMod?.xpMult)||1)*xpPrestige;p.xp+=Math.round(amount*mult);while(p.xp>=p.xpNeeded){p.xp-=p.xpNeeded;levelUp(G);}}
 function levelUp(G){const p=G.player;p.level++;p.xpNeeded=CONFIG.xp.levelThreshold(p.level);const ri=Math.min(Math.floor((p.level-1)/5),CONFIG.ranks.length-1);const rankUp=ri>p.rankIdx;p.rankIdx=ri;p.maxHp+=22;p.hp=Math.min(p.hp+30,p.maxHp);p.maxMp+=8;p.mp=Math.min(p.mp+10,p.maxMp);p.atkDamage=Math.round(p.atkDamage*1.07);p.atkRange+=1.5;p.speed+=.06;p.statPoints+=5;if(rankUp){G.shadowLimit=Math.min(G.shadowLimit+1,8);const rc=CONFIG.rankColors[CONFIG.ranks[p.rankIdx]]||CONFIG.rankColors["E"];setTimeout(()=>RankCeremony.play(CONFIG.ranks[p.rankIdx],CONFIG.rankNames[p.rankIdx],rc.main),200);powerSpike(G,`⬆ RANK ${CONFIG.ranks[p.rankIdx]} — ${CONFIG.rankNames[p.rankIdx].toUpperCase()}`,"#ffd700");}else{notify(G,"⬆ LEVEL UP! +5 stat pts","#ffd700");AudioEngine.play('levelup',.45);flashScreen('#7b35ff',.2,350);screenShake(3);}flashLevelUp(rankUp?`RANK ${CONFIG.ranks[p.rankIdx]}`:"LEVEL UP");autoSave(G);}
 
-function updateEffects(G,dt){for(let i=G.effects.dmgTexts.length-1;i>=0;i--){const d=G.effects.dmgTexts[i];d.life-=dt;d.y-=d.vy*(dt/16);d.alpha=Math.max(0,d.life/d.maxLife);if(d.life<=0)G.effects.dmgTexts.splice(i,1);}for(let i=G.effects.particles.length-1;i>=0;i--){const p=G.effects.particles[i];p.life-=dt;p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vx*=.92;p.vy*=.92;p.alpha=Math.max(0,p.life/p.maxLife);if(p.life<=0)G.effects.particles.splice(i,1);}for(let i=G.effects.slashRings.length-1;i>=0;i--){const s=G.effects.slashRings[i];s.life-=dt;s.r=s.maxR*(1-s.life/s.maxLife);s.alpha=s.life/s.maxLife;if(s.life<=0)G.effects.slashRings.splice(i,1);}if(G.effects.equipFlash>0)G.effects.equipFlash-=dt;
+function updateEffects(G,dt){for(let i=G.effects.dmgTexts.length-1;i>=0;i--){const d=G.effects.dmgTexts[i];d.life-=dt;d.y-=d.vy*(dt/16);d.x+=(d.vx||0)*(dt/16);d.alpha=Math.max(0,d.life/d.maxLife);if(d.life<=0)G.effects.dmgTexts.splice(i,1);}for(let i=G.effects.particles.length-1;i>=0;i--){const p=G.effects.particles[i];p.life-=dt;p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vx*=.92;p.vy*=.92;p.alpha=Math.max(0,p.life/p.maxLife);if(p.life<=0)G.effects.particles.splice(i,1);}for(let i=G.effects.slashRings.length-1;i>=0;i--){const s=G.effects.slashRings[i];s.life-=dt;s.r=s.maxR*(1-s.life/s.maxLife);s.alpha=s.life/s.maxLife;if(s.life<=0)G.effects.slashRings.splice(i,1);}if(G.effects.equipFlash>0)G.effects.equipFlash-=dt;
 // Bleed tick
 for(const e of G.enemies){if(e.state!=="ALIVE"||!e.bleed)continue;e.bleed-=dt;if(e.bleed>0&&Math.random()<.3){e.hp-=e.bleedDmg*(dt/500);if(e.hp<=0){e.hp=0;e.state="DEAD";e.deathTimer=1500;e.extractable=true;killEnemy(G,e);}}}}
-function spawnDmgText(G,x,y,text,color){G.effects.dmgTexts.push({x,y,text,color,alpha:1,vy:.55+Math.random()*.3,life:900,maxLife:900});}
+function spawnDmgText(G,x,y,text,color){G.effects.dmgTexts.push({x,y,text,color,alpha:1,vx:(Math.random()-.5)*.35,vy:.55+Math.random()*.3,life:900,maxLife:900});}
 function spawnParticles(G,x,y,count,color,speed){for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,s=speed*(.5+Math.random());G.effects.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:2+Math.random()*2,color,alpha:1,life:350+Math.random()*200,maxLife:550});}}
 
 function render(G){
   const ctx=G.ctx,W=G.W,H=G.H;
+  const cam=G.cam||{x:0,y:0};
   ctx.clearRect(0,0,W,H);
   const _pal=G.mode==="DUNGEON"?(DUNGEON_PALETTES[G.dungeon.rank]||DUNGEON_PALETTES.E):null;
-  ctx.fillStyle=_pal?_pal.bg:"#03030f";ctx.fillRect(0,0,W,H);
-  drawGrid(ctx,W,H,G.mode,G.dungeon.rank);drawPortals(G);drawSlashRings(G);drawParticles(G);
+  /* Background reacts to game state (Bones pattern) */
+  const _bgBase=_pal?_pal.bg:'#03030f';
+  ctx.fillStyle=G.boss&&!G.boss.dead?(_pal?_pal.bg.replace('0f','18'):'#0a030f'):_bgBase;
+  ctx.fillRect(0,0,W,H);
+  /* Apply world camera transform for all world-space draws */
+  ctx.save();
+  ctx.translate(-Math.round(cam.x),-Math.round(cam.y));
+  TERRAIN.draw(ctx);drawGrid(ctx,W,H,G.mode,G.dungeon.rank,cam);drawPortals(G);drawSlashRings(G);drawParticles(G);
   drawCorpses(G);drawEnemies(G);drawBoss(G);drawShadows(G);drawProjectiles(G);drawPlayer(G);
-  drawDmgTexts(G);drawBossHPBar(G);drawInteractionHint(G);drawDungeonOverlay(G);drawDailyModBanner(G);drawNotifications(G);
+  drawDmgTexts(G);
+  ctx.restore();
+  /* HUD elements drawn in screen space (no camera offset) */
+  drawBossHPBar(G);drawInteractionHint(G);drawDungeonOverlay(G);drawDailyModBanner(G);drawNotifications(G);
+  drawMinimap(G);
   updateHUD(G);updateSkillPad(G);
 }
-function drawGrid(ctx,W,H,mode,rank){
+function drawGrid(ctx,W,H,mode,rank,cam){
   const pal=DUNGEON_PALETTES[rank]||DUNGEON_PALETTES.E;
   ctx.save();
   ctx.strokeStyle=mode==="DUNGEON"?pal.grid:"rgba(123,53,255,0.04)";
   ctx.lineWidth=1;
-  for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-  for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  /* Grid aligned to camera so it tiles the world (Bones pattern) */
+  const _gc=cam||{x:0,y:0};
+  const _gsx=Math.floor(_gc.x/60)*60,_gsy=Math.floor(_gc.y/60)*60;
+  for(let x=_gsx;x<_gc.x+W+60;x+=60){ctx.beginPath();ctx.moveTo(x,_gc.y);ctx.lineTo(x,_gc.y+H);ctx.stroke();}
+  for(let y=_gsy;y<_gc.y+H+60;y+=60){ctx.beginPath();ctx.moveTo(_gc.x,y);ctx.lineTo(_gc.x+W,y);ctx.stroke();}
   // Dungeon: add corner vignette in rank color
   if(mode==="DUNGEON"){
-    const rg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.25,W/2,H/2,Math.min(W,H)*.8);
+    const _cv=cam||{x:0,y:0};const rg=ctx.createRadialGradient(_cv.x+W/2,_cv.y+H/2,Math.min(W,H)*.25,_cv.x+W/2,_cv.y+H/2,Math.min(W,H)*.8);
     rg.addColorStop(0,'transparent');rg.addColorStop(1,pal.accent+'1a');
     ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
   }
@@ -2503,7 +2869,8 @@ function drawGrid(ctx,W,H,mode,rank){
 }
 function drawPortals(G){const ctx=G.ctx;for(const portal of G.portals){if(!portal.active)continue;const rc=CONFIG.rankColors[portal.rank]||CONFIG.rankColors["E"];const pulse=Math.sin(portal.pulse)*.3+.7,isExit=portal.type==="EXIT",lifeFade=portal.type==="ENTRY"?Math.min(1,portal.life/3000):1;ctx.save();ctx.globalAlpha=.12*pulse*lifeFade;ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r+12+Math.sin(portal.pulse)*4,0,Math.PI*2);ctx.fillStyle=rc.glow;ctx.shadowBlur=30;ctx.shadowColor=rc.glow;ctx.fill();ctx.restore();ctx.save();ctx.globalAlpha=(.5+.3*pulse)*lifeFade;ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r+6,0,Math.PI*2);ctx.strokeStyle=rc.main;ctx.lineWidth=isExit?3:2;ctx.shadowBlur=20;ctx.shadowColor=rc.main;ctx.stroke();ctx.restore();ctx.save();ctx.globalAlpha=(.7+.2*pulse)*lifeFade;ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r,0,Math.PI*2);const grad=ctx.createRadialGradient(portal.x,portal.y,0,portal.x,portal.y,portal.r);grad.addColorStop(0,rc.glow+"cc");grad.addColorStop(1,rc.main+"44");ctx.fillStyle=grad;ctx.shadowBlur=15;ctx.shadowColor=rc.main;ctx.fill();ctx.restore();const now=performance.now()*.001;ctx.save();ctx.globalAlpha=.6*lifeFade;ctx.translate(portal.x,portal.y);ctx.rotate(now*(isExit?-1.2:1.0));ctx.strokeStyle=rc.text;ctx.lineWidth=1.5;for(let i=0;i<4;i++){const a=(i/4)*Math.PI*2;ctx.beginPath();ctx.moveTo(Math.cos(a)*6,Math.sin(a)*6);ctx.lineTo(Math.cos(a)*portal.r*.7,Math.sin(a)*portal.r*.7);ctx.stroke();}ctx.restore();ctx.save();ctx.globalAlpha=lifeFade;ctx.font="bold 13px 'Rajdhani',sans-serif";ctx.textAlign="center";ctx.fillStyle=rc.text;ctx.shadowBlur=8;ctx.shadowColor=rc.main;ctx.fillText(isExit?"EXIT":`GATE ${portal.rank}`,portal.x,portal.y-portal.r-14);ctx.restore();}}
 function drawCorpses(G){const ctx=G.ctx;for(const e of G.enemies){if(e.state!=="DEAD")continue;const alpha=Math.max(0,e.deathTimer/1500)*.5;ctx.save();ctx.globalAlpha=alpha;ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fillStyle="#220008";ctx.shadowBlur=6;ctx.shadowColor="#440011";ctx.fill();if(e.extractable&&!e.extracted){ctx.font="bold 10px 'Share Tech Mono',monospace";ctx.textAlign="center";ctx.fillStyle="#aa66ff";ctx.fillText("Q",e.x,e.y+4);}ctx.restore();}if(G.boss&&G.boss.state==="DEAD"&&!G.boss.extracted){const alpha=Math.max(0,Math.min(1,G.boss.deathTimer/4000))*.6;ctx.save();ctx.globalAlpha=alpha;ctx.beginPath();ctx.arc(G.boss.x,G.boss.y,G.boss.r,0,Math.PI*2);ctx.fillStyle="#220000";ctx.shadowBlur=10;ctx.shadowColor="#440000";ctx.fill();if(G.boss.extractable){ctx.font="bold 12px 'Share Tech Mono',monospace";ctx.textAlign="center";ctx.fillStyle="#ff88ff";ctx.fillText("Q",G.boss.x,G.boss.y+5);}ctx.restore();}}
-function drawEnemies(G){const ctx=G.ctx;for(const e of G.enemies){if(e.state!=="ALIVE")continue;const fl=e.flashTimer>0,st=e.stunTimer>0;ctx.save();ctx.beginPath();ctx.arc(e.x,e.y+4,e.r*.75,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.35)";ctx.filter="blur(3px)";ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fillStyle=fl?"#ffffff":(st?"#9966ff":(e.color||"#ff2244"));ctx.shadowBlur=fl?25:14;ctx.shadowColor=fl?"#ffffff":(e.color||"#cc0022");ctx.fill();ctx.restore();
+function drawEnemies(G){const ctx=G.ctx;const _dc=G.cam||{x:0,y:0},_dp=80;for(const e of G.enemies){if(e.state!=="ALIVE")continue;
+    if(e.x<_dc.x-_dp||e.x>_dc.x+G.W+_dp||e.y<_dc.y-_dp||e.y>_dc.y+G.H+_dp)continue;const fl=e.flashTimer>0,st=e.stunTimer>0;ctx.save();ctx.beginPath();ctx.arc(e.x,e.y+4,e.r*.75,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.35)";ctx.filter="blur(3px)";ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fillStyle=fl?"#ffffff":(st?"#9966ff":(e.color||"#ff2244"));ctx.shadowBlur=fl?25:14;ctx.shadowColor=fl?"#ffffff":(e.color||"#cc0022");ctx.fill();ctx.restore();
   // Type icon
   if(e.icon){ctx.save();ctx.font="10px serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(e.icon,e.x,e.y);ctx.restore();}
   // Type label
@@ -2526,6 +2893,79 @@ ctx.save();ctx.beginPath();ctx.arc(p.x,p.y+4,p.r*.8,0,Math.PI*2);ctx.fillStyle="
 function drawSlashRings(G){const ctx=G.ctx;for(const s of G.effects.slashRings){ctx.save();ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.strokeStyle=s.color?`${s.color}${Math.floor(s.alpha*180).toString(16).padStart(2,"0")}`:`rgba(123,53,255,${s.alpha*.7})`;ctx.lineWidth=2;ctx.shadowBlur=10;ctx.shadowColor=s.color||"#7b35ff";ctx.stroke();ctx.restore();}}
 function drawParticles(G){const ctx=G.ctx;for(const p of G.effects.particles){ctx.save();ctx.globalAlpha=p.alpha;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.shadowBlur=6;ctx.shadowColor=p.color;ctx.fill();ctx.restore();}}
 function drawDmgTexts(G){const ctx=G.ctx;for(const d of G.effects.dmgTexts){ctx.save();ctx.globalAlpha=d.alpha;const crit=String(d.text).startsWith("✦");ctx.font=crit?"bold 16px Rajdhani":"bold 13px 'Share Tech Mono',monospace";ctx.fillStyle=d.color;ctx.shadowBlur=8;ctx.shadowColor=d.color;ctx.fillText(d.text,d.x,d.y);ctx.restore();}}
+
+function addKillFeed(text,color='#ff8888'){
+  const feed=document.getElementById('killFeed');if(!feed)return;
+  const el=document.createElement('div');el.className='kfEntry';
+  el.textContent=text;el.style.color=color;
+  feed.appendChild(el);
+  setTimeout(()=>{if(el.parentNode)el.remove();},3200);
+  if(feed.children.length>7)feed.firstChild?.remove();
+}
+
+function drawMinimap(G){
+  const mm_w=100,mm_h=100,mm_x=G.W-mm_w-8,mm_y=G.H-mm_h-8;
+  const ctx=G.ctx,scx=mm_w/WORLD_W,scy=mm_h/WORLD_H;
+  const cam=G.cam||{x:0,y:0};
+  ctx.save();
+  ctx.fillStyle='rgba(3,3,15,0.78)';
+  ctx.strokeStyle='rgba(123,53,255,0.35)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.roundRect(mm_x,mm_y,mm_w,mm_h,4);ctx.fill();ctx.stroke();
+  /* Terrain thumbnail on minimap */
+  if(TERRAIN.ready&&TERRAIN.canvas){
+    ctx.save();ctx.globalAlpha=0.55;
+    ctx.drawImage(TERRAIN.canvas,mm_x,mm_y,mm_w,mm_h);
+    ctx.restore();
+  }
+  /* Portals */
+  for(const po of G.portals){
+    if(!po.active)continue;
+    const rc=CONFIG.rankColors[po.rank]||CONFIG.rankColors['E'];
+    ctx.fillStyle=rc.main;
+    ctx.fillRect(mm_x+po.x*scx-2,mm_y+po.y*scy-2,4,4);
+  }
+  /* Enemies */
+  for(const e of G.enemies){
+    if(e.state!=='ALIVE')continue;
+    ctx.fillStyle='#ff4444';
+    ctx.fillRect(mm_x+e.x*scx-1,mm_y+e.y*scy-1,2,2);
+  }
+  /* Boss */
+  if(G.boss&&!G.boss.dead){
+    ctx.fillStyle='#ff00ff';
+    ctx.beginPath();ctx.arc(mm_x+G.boss.x*scx,mm_y+G.boss.y*scy,3,0,Math.PI*2);ctx.fill();
+  }
+  /* XP orbs by tier color */
+  for(const o of XPOrbs.orbs){
+    if(o.delay>0)continue;
+    ctx.fillStyle=(o.tier&&o.tier.color)||'#aa66ff';
+    const sz=o.tier&&o.tier.rarity==='mythic'?3:2;
+    ctx.fillRect(mm_x+o.x*scx-sz/2,mm_y+o.y*scy-sz/2,sz,sz);
+  }
+  /* Shadows */
+  for(const sh of G.shadows){
+    ctx.fillStyle='#aa66ff';
+    ctx.fillRect(mm_x+sh.x*scx-1,mm_y+sh.y*scy-1,2,2);
+  }
+  /* XP shrines */
+  if(typeof XP_SHRINES!=='undefined'){
+    for(const sh of XP_SHRINES){
+      ctx.fillStyle='rgba(170,102,255,0.5)';
+      ctx.fillRect(mm_x+sh.x*scx-2,mm_y+sh.y*scy-2,4,4);
+    }
+  }
+  /* Player */
+  ctx.fillStyle='#7b35ff';
+  ctx.beginPath();ctx.arc(mm_x+G.player.x*scx,mm_y+G.player.y*scy,3,0,Math.PI*2);ctx.fill();
+  /* Viewport rect */
+  ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=0.8;
+  ctx.strokeRect(mm_x+cam.x*scx,mm_y+cam.y*scy,G.W*scx,G.H*scy);
+  /* Label */
+  ctx.font="6px 'Share Tech Mono',monospace";
+  ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.textAlign='left';ctx.fillText('MAP',mm_x+3,mm_y+mm_h-3);
+  ctx.restore();
+}
 
 function updateHUD(G){
   const p=G.player;
@@ -2551,6 +2991,13 @@ function updateHUD(G){
   document.getElementById("shadowCount").textContent=G.shadows.length;
   document.getElementById("shadowLimitEl").textContent=G.shadowLimit;
   if(!G.isTouch)updateDesktopAbilityBar(G);
+  const _orbR2=G._orbCollectRadius||10;
+  const _rBar2=document.getElementById('orbRadiusBar');
+  if(_rBar2)_rBar2.style.width=Math.min(100,(_orbR2/80)*100)+'%';
+  const _rLbl=document.getElementById('orbRadiusVal');
+  if(_rLbl)_rLbl.textContent='🔮'+_orbR2+'px';
+  const _xpFill=document.getElementById('xpStripFill');
+  if(_xpFill)_xpFill.style.width=(Math.min(1,p.xp/p.xpNeeded)*100)+'%';
 }
 function updateDesktopAbilityBar(G){
   const bar=document.getElementById("abilityBar");
@@ -2964,7 +3411,7 @@ function showDeadScreen(G,v){
     G.prestige.bestKills=Math.max(G.prestige.bestKills,G.stats.kills);
     G.prestige.bestLevel=Math.max(G.prestige.bestLevel,G.player.level);
     autoSave(G);
-    document.getElementById("deadStats").innerHTML=`Lv ${G.player.level} · ${CONFIG.ranks[G.player.rankIdx]}-Rank<br>Kills: ${G.stats.kills} &nbsp;·&nbsp; Bosses: ${G.stats.bossKills}<br>Dungeons: ${G.stats.dungeonsCleared} &nbsp;·&nbsp; Shadows: ${G.stats.shadowsExtracted}<br><span style="color:#ff6680">Gold lost: ${lost.toLocaleString()}G (−15%)</span><br><span style="color:#aa66ff">✦ Shadow Tokens earned: +${tokens}</span>`;
+    document.getElementById("deadStats").innerHTML=`Lv ${G.player.level} · ${CONFIG.ranks[G.player.rankIdx]}-Rank<br>Kills: ${G.stats.kills} &nbsp;·&nbsp; Bosses: ${G.stats.bossKills}<br>Dungeons: ${G.stats.dungeonsCleared} &nbsp;·&nbsp; Shadows: ${G.stats.shadowsExtracted}<br>Orbs: ${G._questStats?.orbsCollected||0} &nbsp;·&nbsp; ✦ Mythic: ${G._questStats?.mythicOrbsCollected||0}<br><span style="color:#ff6680">Gold lost: ${lost.toLocaleString()}G (−15%)</span><br><span style="color:#aa66ff">✦ Shadow Tokens earned: +${tokens}</span>`;
   }else if(!v){G._deathPenaltyApplied=false;}
 }
 
@@ -2972,14 +3419,20 @@ function gameLoop(G,ts){
   const dt=Math.min(ts-G.lastTime,50);G.lastTime=ts;
 
   // Hit stop
-  if(_hitStopFrames>0){_hitStopFrames--;applyShake(G.canvas);LootBeams.draw();XPOrbs.draw();requestAnimationFrame(ts=>gameLoop(G,ts));return;}
+  if(_hitStopFrames>0){_hitStopFrames--;applyShake(G.canvas);LootBeams.draw();XPOrbs.draw(G.cam);requestAnimationFrame(ts=>gameLoop(G,ts));return;}
 
+  /* Build resonance timer */
+  if(G._buildResonanceTimer>0){
+    G._buildResonanceTimer-=dt;
+    const badge=document.getElementById('buildBadge');
+    if(badge){badge.style.boxShadow=G._buildResonanceTimer>0?`0 0 12px ${G.buildDef?.color||'#7b35ff'}`:'none';}
+  }
   if(G.mode!=="DEAD"){
     updateMovement(G,dt);updateInteraction(G,dt);updateCombat(G,dt);
     updateEffects(G,dt);updateRegen(G,dt);updatePortalSpawner(G,dt);
     updateNotifications(G,dt);updateShadows(G,dt);
     Combo.tick(dt);KillStreak.tick(dt);
-    LootBeams.update(dt);XPOrbs.update(dt,G.player.x,G.player.y);
+    LootBeams.update(dt);XPOrbs.update(dt,G.player.x,G.player.y,G);
     // Build system — re-evaluate every 2s
     G._buildTimer=(G._buildTimer||0)+dt;
     if(G._buildTimer>2000){G._buildTimer=0;detectBuild(G);renderBuildHUD(G);}
@@ -2989,7 +3442,7 @@ function gameLoop(G,ts){
   applyShake(G.canvas);
   render(G);
   LootBeams.draw();
-  XPOrbs.draw();
+  XPOrbs.draw(window._G&&window._G.cam);
   if(G.mode==="DEAD")showDeadScreen(G,true);
   requestAnimationFrame(ts=>gameLoop(G,ts));
 }
@@ -3008,12 +3461,13 @@ const PRESTIGE_PASSIVES=[
   {id:"gold_sense",name:"Gold Sense",desc:"+25% gold from all sources",cost:5,icon:"💰",apply:()=>{}},
   {id:"shadow_affinity",name:"Shadow Affinity",desc:"+1 shadow army slot permanently",cost:7,icon:"👥",apply:(p,G)=>{G.shadowLimit++;}},
   {id:"death_proof",name:"Death's Proof",desc:"Death penalty reduced to 5% gold",cost:8,icon:"💀",apply:()=>{}},
-  {id:"xp_hunger",name:"XP Hunger",desc:"+30% XP from all kills",cost:5,icon:"⬆",apply:()=>{}},
+  {id:"xp_hunger",name:"XP Hunger",desc:"Orb collection radius +30px — never miss XP",cost:5,icon:"⬆",apply:(p,G)=>{if(G)G._orbCollectRadius=(G._orbCollectRadius||10)+30;}},
 ];
 
 function initPrestige(G){
   if(!G.prestige)G.prestige={tokens:0,passives:{},totalRuns:0,bestKills:0,bestLevel:0};
   // Apply all purchased passives
+  G._orbCollectRadius=10;/* reset before re-applying passives */
   for(const pa of PRESTIGE_PASSIVES){
     if(G.prestige.passives[pa.id]){
       try{pa.apply(G.player,G);}catch(e){}
@@ -3099,6 +3553,8 @@ const QUEST_POOL=[
   {id:"gold2000",name:"Wealth Hunter",desc:"Earn 2000 gold in one session",icon:"💰",goal:2000,type:"goldEarned",reward:{gold:600,tokens:2}},
   {id:"loot5",name:"Loot Goblin",desc:"Collect 5 items",icon:"🎒",goal:5,type:"itemsCollected",reward:{gold:400,tokens:1}},
   {id:"b_rank",name:"B-Rank Conquest",desc:"Clear a B-rank or higher gate",icon:"🔥",goal:1,type:"bRankClear",reward:{gold:2000,tokens:5}},
+  {id:"orbs50",name:"Orb Collector",desc:"Collect 50 XP orbs",icon:"🔮",goal:50,type:"orbsCollected",reward:{gold:450,tokens:2}},
+  {id:"orbs_mythic",name:"Mythic Harvest",desc:"Collect 3 mythic orbs",icon:"✦",goal:3,type:"mythicOrbsCollected",reward:{gold:1200,tokens:4}},
 ];
 
 function initQuests(G){
@@ -3132,6 +3588,8 @@ function updateQuests(G){
     else if(q.type==="goldEarned")prog=G._questStats.goldEarned;
     else if(q.type==="itemsCollected")prog=G._questStats.itemsCollected;
     else if(q.type==="bRankClear")prog=G._questStats.bRankClear;
+    else if(q.type==="orbsCollected")prog=G._questStats.orbsCollected||0;
+    else if(q.type==="mythicOrbsCollected")prog=G._questStats.mythicOrbsCollected||0;
     q.progress=prog;
     if(!q.completed&&prog>=q.goal){q.completed=true;notify(G,`✦ QUEST COMPLETE: ${q.name}!`,"#ffd700",3000);AudioEngine.play("levelup",.6);flashScreen("#ffd700",.25,600);}
   }
@@ -3345,6 +3803,7 @@ const DUNGEON_PALETTES={
     initPrestige(G);// re-apply passives to fresh player
     showDeadScreen(G,false);
     for(let i=0;i<5;i++)spawnEnemy(G);
+    TERRAIN.generate('open_world','E');
     G.portalSpawnTimer=-8000;
     notify(G,"SYSTEM: Hunter has awakened.","#aaccff",3000);
     if(savedPrestige.tokens>0)notify(G,`✦ ${savedPrestige.tokens} Shadow Tokens available in Archive`,"#aa66ff",4000);
@@ -3355,164 +3814,25 @@ const DUNGEON_PALETTES={
 </script>
 <script>
 /* ============================================================
-   PWA ENGINE — Self-registering Service Worker (single-file trick)
-
-   HOW IT WORKS:
-   The HTML file serves double duty. When loaded normally it's the
-   game. When loaded with ?__sw in the URL, it's detected by the
-   service worker bootstrap below and the SW context intercepts the
-   response, substituting pure JS so the browser accepts it as a
-   valid service worker script. This is the only reliable way to get
-   a real same-origin SW from a single HTML file.
+   PWA ENGINE — GitHub Pages compatible
+   sw.js handles caching; manifest.json drives install.
    ============================================================ */
-
-/* ── STEP 0: If we are running as a SW (imported via ?__sw), execute SW code ── */
-if(typeof ServiceWorkerGlobalScope!=="undefined"&&self instanceof ServiceWorkerGlobalScope){
-  // This block only runs inside the service worker context
-  const CACHE="sl-rebuild-v4";
-  const PAGE_URL=self.location.href.split("?")[0]; // bare HTML URL
-
-  self.addEventListener("install",e=>{
-    self.skipWaiting();
-    e.waitUntil(
-      caches.open(CACHE).then(c=>
-        // Cache the main page (without ?__sw)
-        fetch(PAGE_URL,{cache:"reload"}).then(r=>{
-          if(r.ok) c.put(PAGE_URL,r.clone());
-          // Also cache under "/" and "./index.html" aliases
-          c.put(new Request(PAGE_URL.replace(/[^/]*$/,"")+"index.html"),r.clone()).catch(()=>{});
-          return r;
-        }).catch(()=>{})
-      )
-    );
-  });
-
-  self.addEventListener("activate",e=>{
-    e.waitUntil(
-      caches.keys().then(keys=>
-        Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
-      ).then(()=>self.clients.claim())
-    );
-  });
-
-  self.addEventListener("fetch",e=>{
-    // When browser fetches the SW script itself (?__sw), return a minimal JS stub.
-    // The real SW logic is already running — this just satisfies the browser's
-    // requirement that the registered script URL returns valid JavaScript.
-    if(e.request.url.includes("__sw")){
-      e.respondWith(new Response("// SW active",{
-        headers:{"Content-Type":"text/javascript"}
-      }));
-      return;
-    }
-    // Only handle same-origin GET requests
-    if(e.request.method!=="GET")return;
-    e.respondWith(
-      fetch(e.request).then(r=>{
-        // Cache successful responses to keep offline copy fresh
-        if(r.ok){
-          const clone=r.clone();
-          caches.open(CACHE).then(c=>c.put(e.request,clone));
-        }
-        return r;
-      }).catch(()=>
-        caches.match(e.request).then(r=>r||caches.match(PAGE_URL))
-      )
-    );
-  });
-
-  // Listen for explicit cache requests from the page
-  self.addEventListener("message",e=>{
-    if(e.data&&e.data.type==="CACHE_NOW"&&e.data.url){
-      caches.open(CACHE).then(c=>
-        fetch(e.data.url,{cache:"reload"}).then(r=>{if(r.ok)c.put(e.data.url,r);}).catch(()=>{})
-      );
-    }
-  });
-
-  // Stop here — don't run the game init code inside the SW
-}else{
-
 (function initPWA(){
 
-  /* ── 1. INLINE MANIFEST via Blob URL ── */
-  const manifest={
-    name:"Solo Leveling: Rebuild",
-    short_name:"SL:Rebuild",
-    description:"Become the Shadow Monarch. Kill, extract, level up.",
-    start_url:"./",
-    display:"fullscreen",
-    orientation:"any",
-    background_color:"#03030f",
-    theme_color:"#03030f",
-    categories:["games","entertainment"],
-    icons:[
-      // We generate SVG icons as data URIs — no external files needed
-      {
-        src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%2303030f'/%3E%3Ccircle cx='256' cy='256' r='160' fill='%237b35ff' opacity='.18'/%3E%3Ccircle cx='256' cy='256' r='80' fill='%237b35ff' opacity='.35'/%3E%3Ctext x='256' y='320' text-anchor='middle' font-size='200' font-family='serif'%3E%E2%9A%94%3C/text%3E%3C/svg%3E",
-        sizes:"512x512",
-        type:"image/svg+xml",
-        purpose:"any maskable"
-      },
-      {
-        src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='28' fill='%2303030f'/%3E%3Ctext x='96' y='130' text-anchor='middle' font-size='100' font-family='serif'%3E%E2%9A%94%3C/text%3E%3C/svg%3E",
-        sizes:"192x192",
-        type:"image/svg+xml",
-        purpose:"any maskable"
-      }
-    ],
-    screenshots:[],
-    shortcuts:[
-      {
-        name:"Continue Hunt",
-        short_name:"Play",
-        description:"Jump back into your last session",
-        url:"./"
-      }
-    ]
-  };
-
-  try{
-    const blob=new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"});
-    const url=URL.createObjectURL(blob);
-    document.getElementById("pwaManifest").href=url;
-  }catch(e){console.warn("PWA manifest blob failed:",e);}
-
-  /* ── 2. SERVICE WORKER — self-registration trick ── */
-  // The page registers ITSELF as its own service worker via ?__sw.
-  // When the browser fetches ?__sw, our SW intercepts it and returns
-  // a pure-JS response (stripping the HTML). This gives a real
-  // same-origin SW that can cache the game for offline play.
+  /* ── SERVICE WORKER ── */
   if("serviceWorker" in navigator){
-    const swUrl=location.href.split("?")[0]+"?__sw";
-    navigator.serviceWorker.register(swUrl,{scope:location.pathname||"./"})
+    navigator.serviceWorker.register('./sw.js',{scope:'./'})
       .then(reg=>{
-        console.log("[PWA] ✓ Service worker registered — offline play enabled");
-        // Tell the active SW to cache this page right now
-        if(reg.active){
-          reg.active.postMessage({type:"CACHE_NOW",url:location.href.split("?")[0]});
-        }
-        const isStandalone=window.matchMedia("(display-mode: standalone)").matches||
-                           window.matchMedia("(display-mode: fullscreen)").matches||
-                           window.navigator.standalone===true;
-        if(isStandalone)document.getElementById("pwaBadge").classList.add("show");
+        console.log("[PWA] ✓ SW registered");
+        if(reg.active)reg.active.postMessage({type:"CACHE_NOW",url:location.href.split("?")[0]});
+        const standalone=window.matchMedia("(display-mode: standalone)").matches||
+                         window.matchMedia("(display-mode: fullscreen)").matches||
+                         navigator.standalone===true;
+        if(standalone){const b=document.getElementById("pwaBadge");if(b)b.classList.add("show");}
       })
-      .catch(err=>{
-        // Expected on file:// — works on https:// or localhost
-        console.info("[PWA] SW not available in this context:",err.message);
-      });
+      .catch(err=>console.info("[PWA] SW not available:",err.message));
 
-    // Intercept the ?__sw request BEFORE it goes to network,
-    // return a JS-only response so the browser accepts it as a SW script
-    if(location.search.includes("__sw")){
-      // We're being fetched AS the service worker — respond with JS only.
-      // (This path is only hit by the SW registration fetch, not the page load.)
-      // The ServiceWorkerGlobalScope block at the top handles actual SW logic.
-    }
-
-    // Listen for SW controlling the page (after first install)
     navigator.serviceWorker.addEventListener("controllerchange",()=>{
-      console.log("[PWA] Service worker now controlling page — offline ready");
       if(window._G)notify(window._G,"📶 Offline mode ready!","#44ff88",2500);
     });
   }
@@ -3604,7 +3924,7 @@ if(typeof ServiceWorkerGlobalScope!=="undefined"&&self instanceof ServiceWorkerG
 
 })();
 
-} // end else (page context, not SW context)
+
 </script>
 </body>
 </html>

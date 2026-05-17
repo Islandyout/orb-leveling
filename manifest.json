@@ -1,0 +1,35 @@
+{
+  "name": "Solo Leveling: Rebuild",
+  "short_name": "SL:Rebuild",
+  "description": "Become the Shadow Monarch. Kill, extract, level up.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#03030f",
+  "theme_color": "#03030f",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Continue Hunt",
+      "short_name": "Play",
+      "description": "Jump back into your last session",
+      "url": "./"
+    }
+  ]
+}
